@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>code-anatomy · прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Світла: Screamin' Green #41ED89 + Salt Box #68596F */
+    color-scheme: light;
+    --bg: #F6F4F7; --surface: #FFFFFF; --sunk: #EFEBF1; --ink: #2A2230; --muted: #68596F; --line: #DDD5E1;
+    --accent: #0B8A46; --accent-soft: #DCFBE9; --glow: #41ED89; --pink: #B8479A;
+    --data: #4C6FD6; --const: #34479A; --operation: #0E9384; --sugar: #D98612; --structure: #68596F; --warn: #D2423A; --warn-soft: #FBE7E5;
+    --hub: #A99BB0; --edge: #B9AFBF; --grid: #E4DDE8; --code-bg: #2A2230; --code-ink: #F1ECF4; --code-ln: #8A7C92; --on-type: #FFFFFF;
+    --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  :root[data-theme="dark"] {
+    /* Темна: Woodland #44472A + Willow Brook #E4EDDD */
+    color-scheme: dark;
+    --bg: #1A1B11; --surface: #232519; --sunk: #1E2015; --ink: #E4EDDD; --muted: #A7AE98; --line: #3A3D27;
+    --accent: #E4EDDD; --accent-soft: #44472A; --glow: #C8DDB0; --pink: #D7A6E3;
+    --data: #93C2DA; --const: #6A9FBC; --operation: #B3D57A; --sugar: #E6BF63; --structure: #8E9170; --warn: #E8876B; --warn-soft: #3A2419;
+    --hub: #44472A; --edge: #5C5F42; --grid: #2A2C1D; --code-bg: #15160E; --code-ink: #E4EDDD; --code-ln: #676A4E; --on-type: #1A1B11;
+  }
+  * { box-sizing: border-box; }
+  code, kbd, .code, .nm, .panel h3, .unordered code, .box code { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+  body { margin: 0; font-family: var(--body); color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.5; transition: background .2s, color .2s; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+  header h1 { font: 700 clamp(22px, 3vw, 32px)/1.1 var(--display); margin: 0; letter-spacing: -.02em; }
+  .eyebrow { font: 600 11px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+  .tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; color: var(--muted); }
+  .tab.on { background: var(--accent-soft); color: var(--accent); border-color: var(--glow); }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  section > h2 { margin: 0 0 6px; font: 700 20px/1.2 var(--display); letter-spacing: -.01em; }
+  section > .hint { margin: 0 0 12px; color: var(--muted); font-size: .92em; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: .8em var(--mono); background: var(--sunk); color: var(--ink); }
+
+  /* ---------- L1 ---------- */
+  .l1 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+  @media (max-width: 900px) { .l1 { grid-template-columns: 1fr; } }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .toolbar input[type=search] { flex: 1; min-width: 160px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--sunk); color: var(--ink); }
+  .toolbar label { color: var(--muted); font-size: .9em; display: inline-flex; gap: 6px; align-items: center; }
+  .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .btn:hover { background: var(--sunk); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+  #cy { height: 560px; border: 1px solid var(--line); border-radius: 10px; background:
+        radial-gradient(circle, var(--grid) 1px, transparent 1px) 0 0 / 18px 18px, var(--sunk); }
+  .panel { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--sunk); min-height: 200px; }
+  .panel h3 { margin: 0 0 6px; font: 600 16px/1.3 var(--mono); word-break: break-word; }
+  .panel .meta { color: var(--muted); font-size: .88em; margin-bottom: 8px; }
+  .panel ul { margin: 4px 0 10px; padding-left: 18px; }
+  .panel a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .panel a:hover { text-decoration: underline; }
+  .panel .empty { color: var(--muted); }
+  .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 6px 10px; border-radius: 6px; margin: 8px 0; font-size: .92em; }
+  .legend-l1 { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85em; color: var(--muted); margin-top: 8px; }
+  .legend-l1 span { display: inline-flex; gap: 6px; align-items: center; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- L3 player ---------- */
+  .fragtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .player { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .player { grid-template-columns: 1fr; } }
+  .code { font-family: var(--mono); font-size: 13px; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: 10px; padding: 12px 0; overflow-x: auto; }
+  .code .row { display: flex; align-items: center; white-space: pre; padding: 1px 12px 1px 0; border-left: 3px solid transparent; transition: background .25s, opacity .25s; }
+  .code .ln { width: 3.2em; text-align: right; padding-right: 12px; color: var(--code-ln); user-select: none; flex: none; }
+  .code .badges { width: 5.6em; flex: none; display: flex; gap: 3px; justify-content: flex-end; padding-right: 8px; }
+  .code .b { font-size: 10px; line-height: 16px; min-width: 20px; padding: 0 4px; border-radius: 8px; text-align: center; color: var(--on-type); font-family: var(--body); font-weight: 600; opacity: .95; }
+  .code .row.dim { opacity: .38; }
+  .code .row.cur { background: color-mix(in srgb, var(--c) 12%, transparent); }
+  .code mark { background: transparent; color: var(--code-ink); border-radius: 3px; padding: 0 2px; box-shadow: inset 0 -2px 0 var(--c); background: color-mix(in srgb, var(--c) 35%, transparent); transition: background .25s; }
+
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--sunk); min-height: 260px; position: relative; }
+  .phase { font-size: .78em; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .stephead { display: flex; gap: 12px; align-items: center; margin: 8px 0 10px; }
+  .order { font: 700 1.25rem/1 var(--display); color: var(--on-type); min-width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; flex: none; }
+  .stephead .nm { font-family: var(--mono); font-size: .98em; word-break: break-word; }
+  .pill { display: inline-block; font-size: .75em; padding: 1px 8px; border-radius: 999px; color: var(--on-type); font-weight: 600; margin-top: 4px; }
+  .card .expl { font-size: 1.02em; margin: 6px 0 10px; }
+  .card .box { background: var(--surface); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: .93em; }
+  .card .box b { display: block; font-size: .78em; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 2px; }
+  .card .box code { font-family: var(--mono); font-size: .92em; }
+  .card .warnbox { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+  .card.anim { animation: pop .28s ease; }
+  @keyframes pop { from { opacity: .3; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .controls { display: flex; gap: 8px; align-items: center; margin: 14px 0 8px; flex-wrap: wrap; }
+  .controls input[type=range] { flex: 1; min-width: 140px; accent-color: var(--glow); }
+  .controls .count { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 60px; text-align: right; }
+  .lanes { display: grid; gap: 6px; }
+  .lane { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .lane .lname { width: 70px; font-size: .8em; color: var(--muted); font-weight: 600; flex: none; }
+  .chip { border: 0; border-radius: 8px; padding: 4px 9px; font: inherit; font-size: .82em; font-weight: 600; color: var(--on-type); cursor: pointer; opacity: .35; transition: opacity .2s, transform .2s; }
+  .chip.done { opacity: .75; }
+  .chip.on { opacity: 1; transform: translateY(-2px); box-shadow: 0 3px 8px rgba(0,0,0,.18); }
+  .arrow { color: var(--muted); font-size: .8em; }
+  .unordered { margin-top: 10px; font-size: .88em; color: var(--muted); }
+  .unordered code { font-family: var(--mono); }
+  details.why { margin-top: 12px; background: var(--sunk); border-radius: 8px; padding: 8px 12px; }
+  details.why summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">code-anatomy · прототип</p>
+      <h1>Нова візуалізація гайда</h1>
+      <p>L1: інтерактивний граф (Cytoscape.js + ELK). L3: покроковий програвач порядку виконання. Дані — справжні гайди.</p>
+    </div>
+    <button class="btn" id="theme" title="Перемкнути тему">☀ Світла</button>
+  </header>
+  <div class="tabs" id="dsTabs"></div>
+
+  <section>
+    <h2>L1 · Проєкт</h2>
+    <p class="hint">Клік на модуль підсвічує його залежності. Розмір вузла відповідає кількості файлів. Колесо — зум, тягни фон — панорама.</p>
+    <div class="l1">
+      <div>
+        <div class="toolbar">
+          <input type="search" id="q" placeholder="Знайти модуль…">
+          <label><input type="checkbox" id="fadeHub" checked> приглушити ребра до спільних модулів</label>
+          <button class="btn" id="fit">Вписати</button>
+        </div>
+        <div id="cy"></div>
+        <div class="legend-l1">
+          <span><i class="dot" style="background:var(--accent)"></i> точка входу</span>
+          <span><i class="dot" style="background:var(--structure)"></i> модуль / тека</span>
+          <span><i class="dot" style="background:transparent;border:2px dashed var(--warn)"></i> сирота: ніхто не імпортує</span>
+          <span><i class="dot" style="background:var(--hub)"></i> хаб: ≥ 5 вхідних ребер</span>
+        </div>
+      </div>
+      <aside class="panel" id="panel"></aside>
+    </div>
+  </section>
+
+  <section>
+    <h2>L3 · Як читає мова</h2>
+    <p class="hint">Крок за кроком, у тому порядку, в якому код виконує рушій. <kbd>←</kbd> <kbd>→</kbd> — крок, <kbd>Пробіл</kbd> — програти.</p>
+    <div class="fragtabs" id="fragTabs"></div>
+    <div class="player">
+      <div class="code" id="code"></div>
+      <div class="card" id="card"></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="prev" title="←">◀</button>
+      <button class="btn" id="play" title="Пробіл">▶ Програти</button>
+      <button class="btn" id="next" title="→">▶</button>
+      <input type="range" id="slider" min="0" value="0">
+      <span class="count" id="count"></span>
+    </div>
+    <div class="lanes" id="lanes"></div>
+    <div class="unordered" id="unordered"></div>
+    <details class="why" id="why"><summary>Чому такий порядок</summary><p></p></details>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/dist/cytoscape-elk.js"></script>
+<script id="datasets" type="application/json">/*DATA*/</script>
+<script>
+"use strict";
+const DATASETS = JSON.parse(document.getElementById("datasets").textContent);
+const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let COLORS = {};
+function readPalette() {
+  COLORS = { data: cssVar("--data"), const: cssVar("--const"), operation: cssVar("--operation"), syntax_sugar: cssVar("--sugar"),
+    structure: cssVar("--structure"), warn: cssVar("--warn"), accent: cssVar("--accent"), pink: cssVar("--pink"),
+    hub: cssVar("--hub"), glow: cssVar("--glow"), edge: cssVar("--edge"), ink: cssVar("--ink"), bg: cssVar("--sunk"), onType: cssVar("--on-type") };
+}
+readPalette();
+const TYPE_UA = { data: "дані", operation: "операція", syntax_sugar: "цукор", structure: "каркас" };
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const colorOf = (el) => (el.type === "data" && el.kind === "const" ? COLORS.const : COLORS[el.type]);
+const $ = (id) => document.getElementById(id);
+
+let ds = 0;
+function renderTabs() {
+  $("dsTabs").innerHTML = DATASETS.map((d, i) => `<button class="tab${i === ds ? " on" : ""}" data-i="${i}">${esc(d.project)} · ${esc(d.languages.join(", "))}</button>`).join("");
+  $("dsTabs").querySelectorAll(".tab").forEach((b) => b.onclick = () => { ds = +b.dataset.i; function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("theme").textContent = t === "dark" ? "☀ Світла" : "☾ Темна";
+  try { localStorage.setItem("ca-theme", t); } catch (e) {}
+  readPalette();
+}
+$("theme").onclick = () => {
+  setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  const sel = cy && cy.$("node.sel").id();
+  renderL1(); if (sel) select(sel); go(cur);
+};
+let saved = null; try { saved = localStorage.getItem("ca-theme"); } catch (e) {}
+setTheme(saved === "light" ? "light" : "dark");
+renderTabs(); renderL1(); renderFragTabs(0); });
+}
+
+// ================================================================ L1
+let cy = null;
+const fileCount = (n) => { const m = String(n.summary || "").match(/(\d+)\s+файл/); return m ? +m[1] : 1; };
+const shortLabel = (id) => { const t = id.replace(/\s*\(.*\)$/, ""); return t.length > 22 ? "…" + t.slice(-21) : t; };
+
+function renderL1() {
+  const d = DATASETS[ds], l1 = d.l1;
+  const inDeg = new Map(l1.nodes.map((n) => [n.id, 0]));
+  l1.edges.forEach((e) => inDeg.set(e.to, (inDeg.get(e.to) || 0) + 1));
+  const orphans = new Set((l1.callouts || []).filter((c) => c.kind === "orphan").map((c) => c.where));
+  const cycles = (l1.callouts || []).filter((c) => c.kind === "cycle").map((c) => c.where);
+  const hubs = new Set([...inDeg].filter(([, v]) => v >= 5).map(([k]) => k));
+  const entry = l1.nodes.find((n) => /точка входу|entry/i.test(n.summary || "")) || l1.nodes[0];
+  const maxCount = Math.max(...l1.nodes.map(fileCount));
+
+  const els = [];
+  l1.nodes.forEach((n) => {
+    const c = fileCount(n);
+    const size = 50 + 80 * Math.sqrt(c / maxCount);
+    const cls = [n.kind === "dir" ? "dir" : "file"];
+    if (n.id === entry.id) cls.push("entry");
+    if (orphans.has(n.id)) cls.push("orphan");
+    if (hubs.has(n.id)) cls.push("hub");
+    els.push({ data: { id: n.id, label: shortLabel(n.id) + (c > 1 ? `\n${c}` : ""), size, w: Math.max(size * 1.6, shortLabel(n.id).length * 10.5 + 28) }, classes: cls.join(" ") });
+  });
+  l1.edges.forEach((e, i) => {
+    if (!inDeg.has(e.from) || !inDeg.has(e.to)) return;
+    const cls = [];
+    if (hubs.has(e.to)) cls.push("tohub");
+    if (cycles.some((w) => w.includes(e.from) && w.includes(e.to))) cls.push("cycle");
+    els.push({ data: { id: "e" + i, source: e.from, target: e.to }, classes: cls.join(" ") });
+  });
+
+  if (cy) cy.destroy();
+  cy = cytoscape({
+    container: $("cy"), elements: els, minZoom: 0.2, maxZoom: 3,
+    style: [
+      { selector: "node", style: {
+        "shape": "round-rectangle", "width": "data(w)", "height": "data(size)",
+        "background-color": COLORS.structure, "label": "data(label)", "color": COLORS.onType,
+        "text-valign": "center", "text-halign": "center", "text-wrap": "wrap", "font-size": 17, "font-weight": 600,
+        "font-family": "IBM Plex Sans, Segoe UI, system-ui, sans-serif", "border-width": 0, "transition-property": "opacity, border-width", "transition-duration": "0.2s" } },
+      { selector: "node.hub", style: { "background-color": COLORS.hub, "color": COLORS.ink, "border-width": 1, "border-color": COLORS.edge } },
+      { selector: "node.entry", style: { "background-color": COLORS.accent } },
+      { selector: "node.orphan", style: { "background-color": COLORS.bg, "color": COLORS.warn, "border-width": 2, "border-style": "dashed", "border-color": COLORS.warn } },
+      { selector: "node.entry.orphan", style: { "background-color": COLORS.accent, "color": COLORS.onType } },
+      { selector: "edge", style: {
+        "width": 1.6, "line-color": COLORS.edge, "target-arrow-color": COLORS.edge, "target-arrow-shape": "triangle",
+        "curve-style": "bezier", "arrow-scale": 0.9, "opacity": 0.85, "transition-property": "opacity, line-color", "transition-duration": "0.2s" } },
+      { selector: "edge.tohub.fadehub", style: { "opacity": 0.12 } },
+      { selector: "edge.cycle", style: { "line-color": COLORS.warn, "target-arrow-color": COLORS.warn, "width": 2.5 } },
+      { selector: ".faded", style: { "opacity": 0.1 } },
+      { selector: "node.hit", style: { "border-width": 4, "border-color": COLORS.syntax_sugar, "border-style": "solid" } },
+      { selector: "node.sel", style: { "border-width": 4, "border-color": COLORS.glow, "border-style": "solid" } },
+      { selector: "edge.out", style: { "line-color": COLORS.accent, "target-arrow-color": COLORS.accent, "width": 2.6, "opacity": 1 } },
+      { selector: "edge.in", style: { "line-color": COLORS.pink, "target-arrow-color": COLORS.pink, "width": 2.6, "opacity": 1 } },
+    ],
+    layout: { name: "elk", nodeDimensionsIncludeLabels: false, fit: true, padding: 24,
+      elk: { algorithm: "layered", "elk.direction": "RIGHT", "elk.layered.spacing.nodeNodeBetweenLayers": 90,
+             "elk.spacing.nodeNode": 22, "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", "elk.edgeRouting": "SPLINES" } },
+  });
+  applyFadeHub();
+  cy.on("tap", "node", (ev) => select(ev.target.id()));
+  cy.on("tap", (ev) => { if (ev.target === cy) select(null); });
+  select(null);
+  $("q").value = "";
+}
+function applyFadeHub() { if (cy) cy.edges(".tohub").toggleClass("fadehub", $("fadeHub").checked); }
+
+function select(id) {
+  const d = DATASETS[ds], l1 = d.l1;
+  cy.elements().removeClass("faded out in sel");
+  if (!id) {
+    $("panel").innerHTML = `<h3>${esc(d.project)}</h3><div class="meta">${l1.nodes.length} модулів · ${l1.edges.length} залежностей</div>` +
+      `<p class="empty">Клікни модуль на графі, щоб побачити, від кого він залежить і хто залежить від нього.</p>` +
+      (l1.callouts || []).map((c) => `<div class="callout"><b>${esc(c.where)}</b>: ${esc(c.note)}</div>`).join("");
+    return;
+  }
+  const node = cy.getElementById(id), n = l1.nodes.find((x) => x.id === id);
+  const outs = node.outgoers("edge"), ins = node.incomers("edge");
+  cy.elements().addClass("faded");
+  node.removeClass("faded").addClass("sel");
+  outs.removeClass("faded").addClass("out"); outs.targets().removeClass("faded");
+  ins.removeClass("faded").addClass("in"); ins.sources().removeClass("faded");
+  const link = (x) => `<li><a data-id="${esc(x.id())}">${esc(shortLabel(x.id()))}</a></li>`;
+  const call = (l1.callouts || []).filter((c) => c.where === id || c.where.includes(id)).map((c) => `<div class="callout">${esc(c.note)}</div>`).join("");
+  $("panel").innerHTML = `<h3>${esc(n.id)}</h3><div class="meta">${esc(n.kind)} · ${fileCount(n)} файл(ів)</div><p>${esc(n.summary || "")}</p>${call}` +
+    `<b style="color:${COLORS.accent}">Залежить від (${outs.length})</b>` + (outs.length ? `<ul>${outs.targets().map(link).join("")}</ul>` : `<p class="empty">ні від кого</p>`) +
+    `<b style="color:${COLORS.pink}">Від нього залежать (${ins.length})</b>` + (ins.length ? `<ul>${ins.sources().map(link).join("")}</ul>` : `<p class="empty">ніхто</p>`);
+  $("panel").querySelectorAll("a[data-id]").forEach((a) => a.onclick = () => select(a.dataset.id));
+}
+$("fadeHub").onchange = applyFadeHub;
+$("fit").onclick = () => cy && cy.animate({ fit: { padding: 24 }, duration: 300 });
+$("q").oninput = () => {
+  const q = $("q").value.trim().toLowerCase();
+  cy.nodes().removeClass("hit");
+  if (q) cy.nodes().filter((n) => n.id().toLowerCase().includes(q)).addClass("hit");
+};
+
+// ================================================================ L3 player
+let frag = null, steps = [], cur = 0, timer = null;
+const orderKey = (o) => (Number.isInteger(o) ? [0, o] : [1, parseInt(String(o).slice(1), 10)]);
+
+function renderFragTabs(i) {
+  const files = DATASETS[ds].files.filter((f) => f.l3_fragment);
+  $("fragTabs").innerHTML = files.map((f, k) => `<button class="tab${k === i ? " on" : ""}" data-k="${k}">№${k + 1} · ${esc(f.path.split("/").pop())} · ${esc(f.l3_fragment.why_chosen)}</button>`).join("");
+  $("fragTabs").querySelectorAll(".tab").forEach((b) => b.onclick = () => renderFragTabs(+b.dataset.k));
+  loadFragment(files[i]);
+}
+
+function loadFragment(f) {
+  stop();
+  frag = f;
+  steps = f.elements.filter((el) => el.order !== null && el.order !== undefined)
+    .sort((a, b) => { const [x, y] = [orderKey(a.order), orderKey(b.order)]; return x[0] - y[0] || x[1] - y[1]; });
+  cur = 0;
+  $("slider").max = Math.max(steps.length - 1, 0);
+  const un = f.elements.filter((el) => el.order === null || el.order === undefined);
+  $("unordered").innerHTML = un.length ? `Поза порядком (каркас, на виконання не впливає): ` + un.map((el) => `<code>${esc(el.name)}</code>`).join(", ") : "";
+  $("why").querySelector("p").textContent = f.l3_fragment.order_explanation;
+  const lanes = [["модуль", steps.filter((s) => Number.isInteger(s.order))], ["виклик", steps.filter((s) => typeof s.order === "string")]].filter((l) => l[1].length);
+  $("lanes").innerHTML = lanes.map(([name, ss]) => `<div class="lane"><span class="lname">${name}</span>` +
+    ss.map((s, k) => (k ? `<span class="arrow">→</span>` : "") + `<button class="chip" data-s="${steps.indexOf(s)}" style="background:${colorOf(s)}" title="${esc(s.name)}">${esc(s.order)} · ${esc(String(s.name).slice(0, 18))}</button>`).join("") + `</div>`).join("");
+  $("lanes").querySelectorAll(".chip").forEach((c) => c.onclick = () => { stop(); go(+c.dataset.s); });
+  go(0);
+}
+
+function markToken(line, name) {
+  const cands = [name, name.replace(/\(\.\.\.\)$/, "("), name.replace(/\(.*$/, ""), name.split(/\s+/)[0]].filter((c) => c && c.length > 1);
+  for (const c of cands) {
+    const i = line.indexOf(c);
+    if (i >= 0) return esc(line.slice(0, i)) + `<mark>` + esc(line.slice(i, i + c.length)) + `</mark>` + esc(line.slice(i + c.length));
+  }
+  return null;
+}
+
+function go(i) {
+  if (!steps.length) { $("card").innerHTML = `<p class="phase">Немає кроків</p>`; return; }
+  cur = Math.max(0, Math.min(i, steps.length - 1));
+  const s = steps[cur], fr = frag.l3_fragment;
+  const lo = parseInt(String(fr.lines).split("-")[0], 10);
+  const lines = fr.full_code.split("\n");
+  const doneByLine = new Map();
+  steps.slice(0, cur + 1).forEach((st) => { if (Number.isInteger(st.line)) { if (!doneByLine.has(st.line)) doneByLine.set(st.line, []); doneByLine.get(st.line).push(st); } });
+  const col = colorOf(s);
+  $("code").innerHTML = lines.map((text, k) => {
+    const ln = lo + k, isCur = s.line === ln;
+    const badges = (doneByLine.get(ln) || []).map((st) => `<span class="b" style="background:${colorOf(st)}${st === s ? ";box-shadow:0 0 0 2px var(--ink)" : ""}">${esc(st.order)}</span>`).join("");
+    const body = isCur ? (markToken(text, String(s.name)) ?? `<mark>${esc(text)}</mark>`) : esc(text);
+    return `<div class="row${isCur ? " cur" : doneByLine.has(ln) ? "" : " dim"}" style="${isCur ? `border-left-color:${col};--c:${col}` : ""}"><span class="ln">${ln}</span><span class="badges">${badges}</span>${body}</div>`;
+  }).join("");
+
+  const phase = Number.isInteger(s.order) ? "Завантаження модуля" : "Виклик функції";
+  $("card").innerHTML = `<div class="phase">${phase} · ${cur + 1} / ${steps.length}</div>` +
+    `<div class="stephead"><div class="order" style="background:${col}">${esc(s.order)}</div><div><div class="nm">${esc(s.name)}</div>` +
+    `<span class="pill" style="background:${col}">${TYPE_UA[s.type]}${s.kind ? " · " + esc(s.kind) : ""}</span> <span class="phase">рядок ${esc(s.line ?? "—")}</span></div></div>` +
+    `<div class="expl">${esc(s.explanation)}</div>` +
+    (s.reading ? `<div class="box"><b>Як читає мова</b>${esc(s.reading)}</div>` : "") +
+    (s.equivalent ? `<div class="box"><b>Без цукру</b><code>${esc(s.equivalent)}</code></div>` : "") +
+    (s.side_effect ? `<div class="box warnbox"><b>⚠️ Побічний ефект</b>${esc(s.side_effect)}</div>` : "");
+  const card = $("card"); card.classList.remove("anim"); void card.offsetWidth; card.classList.add("anim");
+
+  $("slider").value = cur;
+  $("count").textContent = `${cur + 1} / ${steps.length}`;
+  $("lanes").querySelectorAll(".chip").forEach((c) => { const k = +c.dataset.s; c.classList.toggle("on", k === cur); c.classList.toggle("done", k < cur); });
+}
+function stop() { clearInterval(timer); timer = null; $("play").textContent = "▶ Програти"; }
+function play() {
+  if (timer) return stop();
+  if (cur >= steps.length - 1) go(0);
+  $("play").textContent = "⏸ Пауза";
+  timer = setInterval(() => { if (cur >= steps.length - 1) return stop(); go(cur + 1); }, 1800);
+}
+$("prev").onclick = () => { stop(); go(cur - 1); };
+$("next").onclick = () => { stop(); go(cur + 1); };
+$("play").onclick = play;
+$("slider").oninput = () => { stop(); go(+$("slider").value); };
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" && e.target.type === "search") return;
+  if (e.key === "ArrowRight") { stop(); go(cur + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { stop(); go(cur - 1); e.preventDefault(); }
+  else if (e.key === " ") { play(); e.preventDefault(); }
+});
+
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("theme").textContent = t === "dark" ? "☀ Світла" : "☾ Темна";
+  try { localStorage.setItem("ca-theme", t); } catch (e) {}
+  readPalette();
+}
+$("theme").onclick = () => {
+  setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  const sel = cy && cy.$("node.sel").id();
+  renderL1(); if (sel) select(sel); go(cur);
+};
+let saved = null; try { saved = localStorage.getItem("ca-theme"); } catch (e) {}
+setTheme(saved === "light" ? "light" : "dark");
+renderTabs(); renderL1(); renderFragTabs(0);
+</script>
+</body>
+</html>

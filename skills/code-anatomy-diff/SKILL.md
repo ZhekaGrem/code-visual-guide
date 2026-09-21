@@ -24,7 +24,10 @@ description: Use this skill when the user asks to visualize what a git commit or
 | `../code-anatomy/SKILL.md` | типи елементів, дерево «який тип», ліміти, формат `order` — діють без змін |
 | `references/worked_example_diff.md` | зразок повного проходу і фікстура тестів |
 
-Профіль учня (`learner-profile.md`, поле `сховище:`) — як у `code-anatomy`.
+**Сховище — спільне з `code-anatomy`**: файл `code-anatomy.json` у домашній теці агента
+(`~/.claude/`, `~/.codex/`, `~/.config/`). Є — пиши за його `path`, не питаючи. Немає ніде —
+одне питання при першому записі, відповідь одразу у файл (правило D, крок 1). Профіль учня
+(`learner-profile.md`) — як у `code-anatomy`.
 
 ---
 
@@ -128,7 +131,7 @@ git rev-list --count <A>..<B>               → скільки комітів; >
 5. teach-back одним рядком
 ```
 
-<constraint> сховище, Drive, правило D — як у `code-anatomy` крок 5; повторний запуск по тому самому діапазону перезаписує </constraint>
+<constraint> `<сховище>` = `path` з `code-anatomy.json`; Drive і `none` — як у `code-anatomy` крок 5; повторний запуск по тому самому діапазону перезаписує </constraint>
 <constraint> відкрив HTML і бачиш червоний блок «Помилка гайда: …» → виправ дані в .md і перезбери; HTML руками не правити </constraint>
 
 ---
