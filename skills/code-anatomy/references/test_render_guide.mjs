@@ -92,21 +92,6 @@ test("Mermaid стилізує через classDef усередині діагр
   assert.match(html, /classDef structure/);
   assert.match(html, /classDef operation/);
 });
-test("по одній SVG-стрічці на фрагмент, з обома просторами нумерації", () => {
-  const frags = exampleData().files.filter((f) => f.l3_fragment).length;
-  assert.equal(html.split("<svg").length - 1, frags);
-  assert.ok(html.includes(">1<"), "① модуль");
-  assert.ok(html.includes(">f3<"), "тіло функції");
-});
-test("цукор малюється трикутником і шестикутником", () => {
-  assert.match(html, /<polygon class="sugar-tri" points="[^"]+"/);
-  assert.match(html, /<polygon class="sugar-hex" points="[^"]+"/);
-});
-test("рядки коду пронумеровані й підсвічені за типом", () => {
-  assert.ok(html.includes('<span class="ln">1</span>'));
-  assert.ok(html.includes('class="line-structure"'));
-  assert.ok(html.includes('class="line-operation"'));
-});
 test("еквіваленти цукру виведені", () => {
   assert.ok(html.includes("Promise.resolve"));
 });
@@ -343,4 +328,42 @@ test("картка екранює ім'я і пояснення", () => {
   const out = CG.playerCard(f, 0);
   assert.ok(!out.includes("<script>x"));
   assert.ok(out.includes("&lt;b&gt;"));
+});
+
+// --- програвач L3 у сторінці --------------------------------------------------------
+test("по одному програвачу на фрагмент, з доріжками модуль/виклик", () => {
+  const html = CG.render(exampleData());
+  const frags = exampleData().files.filter((f) => f.l3_fragment).length;
+  assert.equal(html.split('<div class="player"').length - 1, frags);
+  assert.ok(html.includes(">1 · Item<"));
+  assert.ok(html.includes(">f3 · reduce<"));
+  assert.ok(html.includes('max="10"'));
+});
+test("програвач одразу показує крок 1 — сторінка має сенс і без кліків", () => {
+  const html = CG.render(exampleData());
+  assert.ok(html.includes("Завантаження модуля · 1 / 11"));
+  assert.ok(html.includes('<span class="ln">1</span>'));
+});
+test("фрагмент без кроків показує статичний код замість програвача", () => {
+  const d = exampleData(); d.files[0].elements.forEach((el) => { el.order = null; });
+  const html = CG.render(d);
+  assert.ok(!html.includes('<div class="player"'));
+  assert.ok(html.includes("немає кроків виконання"));
+});
+test("каркас без order названий під програвачем", () => {
+  assert.ok(CG.render(exampleData()).includes("Поза порядком"));
+});
+test("статичний блок коду (diff, фрагмент без кроків) пронумерований і підсвічений за типом", () => {
+  const out = CG.codeBlock(exampleData().files[0]);
+  assert.ok(out.includes('<span class="ln">1</span>'));
+  assert.ok(out.includes('class="line-structure"'));
+  assert.ok(out.includes('class="line-operation"'));
+});
+test("SVG-стрічка (diff) має обидва простори нумерації і фігури цукру", () => {
+  const svg = CG.svgStrip(exampleData().files[0]);
+  assert.equal(svg.split("<svg").length - 1, 1);
+  assert.ok(svg.includes(">1<"));
+  assert.ok(svg.includes(">f3<"));
+  assert.match(svg, /<polygon class="sugar-tri" points="[^"]+"/);
+  assert.match(svg, /<polygon class="sugar-hex" points="[^"]+"/);
 });
