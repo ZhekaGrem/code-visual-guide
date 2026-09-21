@@ -33,7 +33,7 @@ flowchart TB
 
 ## Чотири типи блоків
 
-Кожен елемент коду належить рівно до одного типу. Кольори ті самі, що в HTML-гайді:
+Кожен елемент коду належить рівно до одного типу. Кольори ті самі, що в HTML-гайді (темна тема):
 
 ```mermaid
 flowchart LR
@@ -41,10 +41,10 @@ flowchart LR
     O["🟩 <b>Операція</b><br/>функції, методи, оператори"]:::op
     S["🟨 <b>Цукор</b><br/>async, лямбди, деструктуризація<br/><i>+ еквівалент без цукру</i>"]:::sugar
     C["⬜ <b>Каркас</b><br/>import, типи, класи"]:::struct
-    classDef data fill:#3B82F6,stroke:#1D4ED8,color:#fff
-    classDef op fill:#10B981,stroke:#047857,color:#fff
-    classDef sugar fill:#F59E0B,stroke:#B45309,color:#111
-    classDef struct fill:#6B7280,stroke:#374151,color:#fff
+    classDef data fill:#93C2DA,stroke:#6A9FBC,color:#1A1B11
+    classDef op fill:#B3D57A,stroke:#8E9170,color:#1A1B11
+    classDef sugar fill:#E6BF63,stroke:#8E9170,color:#1A1B11
+    classDef struct fill:#8E9170,stroke:#44472A,color:#1A1B11
 ```
 
 ## Приклад: як мова читає `checkout.ts`
@@ -82,10 +82,10 @@ flowchart LR
         f1 --> f2 --> f3 --> f4 --> f5 --> f6 --> f7 --> f8
     end
     M --> F
-    classDef data fill:#3B82F6,stroke:#1D4ED8,color:#fff
-    classDef op fill:#10B981,stroke:#047857,color:#fff
-    classDef sugar fill:#F59E0B,stroke:#B45309,color:#111
-    classDef struct fill:#6B7280,stroke:#374151,color:#fff
+    classDef data fill:#93C2DA,stroke:#6A9FBC,color:#1A1B11
+    classDef op fill:#B3D57A,stroke:#8E9170,color:#1A1B11
+    classDef sugar fill:#E6BF63,stroke:#8E9170,color:#1A1B11
+    classDef struct fill:#8E9170,stroke:#44472A,color:#1A1B11
 ```
 
 Що тут неочевидно:
@@ -113,6 +113,9 @@ JS/TS з Node.js · Python · Go · Java · SQL · MongoDB
 Скіл пише `code/<репо>/code_guide_<sha8>.md` (джерело) і поруч самодостатній HTML у
 `artifacts/`. HTML рендериться в браузері, тож ні Node, ні Python на машині не потрібні.
 Тека `code/` лежить у `.gitignore`: гайди належать тому, хто їх згенерував, а не цьому репо.
+
+У HTML граф L1 інтерактивний (зум, клік на модуль, пошук), а L3 — покроковий програвач
+порядку виконання; тема темна, світла — кнопкою в шапці.
 
 ### Де зберігаються візуали
 
