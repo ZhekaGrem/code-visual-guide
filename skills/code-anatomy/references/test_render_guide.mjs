@@ -306,3 +306,41 @@ test("diff-режим L1 лишається на Mermaid, без Cytoscape-ко�
   const d = JSON.parse(readFileSync(join(HERE, "..", "..", "code-anatomy-diff", "references", "worked_example_diff.md"), "utf8").match(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/)[1]);
   assert.ok(!CG.render(d).includes('id="cy-l1"'));
 });
+
+// --- програвач L3: кроки ------------------------------------------------------------
+const F = () => exampleData().files[0];
+test("кроки програвача: спершу модуль 1..3, потім f1..f8; каркас без order випадає", () => {
+  assert.deepEqual(CG.playerSteps(F()).map((s) => s.order), [1, 2, 3, "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"]);
+});
+test("markToken підсвічує саме токен, а не весь рядок", () => {
+  assert.equal(CG.markToken("x.map(a)", ".map(...)"), "x<mark>.map(</mark>a)");
+  assert.equal(CG.markToken("a => b", "a => b"), "<mark>a =&gt; b</mark>");
+  assert.equal(CG.markToken("foo()", "bar"), null);
+});
+test("код на кроці f3: рядок 4 поточний з токеном reduce, бейджі f1–f3, рядок 5 ще попереду", () => {
+  const out = CG.playerCode(F(), 5);
+  const row4 = out.match(/<div class="row cur"[^>]*><span class="ln">4<\/span>[\s\S]*?<\/div>/)[0];
+  assert.ok(row4.includes("<mark>reduce</mark>"));
+  for (const o of ["f1", "f2", "f3"]) assert.ok(row4.includes(`>${o}</span>`), o);
+  assert.ok(!row4.includes(">f4</span>"));
+  assert.match(out, /<div class="row dim"><span class="ln">5<\/span>/);
+  assert.match(out, /<div class="row"><span class="ln">1<\/span>/);
+});
+test("картка кроку: фаза, лічильник, тип; для async — еквівалент без цукру", () => {
+  const first = CG.playerCard(F(), 0);
+  assert.ok(first.includes("Завантаження модуля · 1 / 11"));
+  assert.ok(first.includes("каркас · import"));
+  const last = CG.playerCard(F(), 10);
+  assert.ok(last.includes("Виклик функції · 11 / 11"));
+  assert.ok(last.includes("Promise.resolve"));
+});
+test("побічний ефект — окремий блок у картці", () => {
+  const f = F(); f.elements[1].side_effect = "пише в консоль";
+  assert.ok(CG.playerCard(f, 1).includes("Побічний ефект"));
+});
+test("картка екранює ім'я і пояснення", () => {
+  const f = F(); f.elements[0].name = "<b>"; f.elements[0].explanation = "<script>x</script>";
+  const out = CG.playerCard(f, 0);
+  assert.ok(!out.includes("<script>x"));
+  assert.ok(out.includes("&lt;b&gt;"));
+});

@@ -444,6 +444,7 @@ const CodeGuide = (function () {
 
   // ---------------------------------------------------------------- SVG L3
   const orderKey = (o) => (Number.isInteger(o) ? [0, o] : [1, parseInt(String(o).slice(1), 10)]);
+  const byOrder = (a, b) => { const [x, y] = [orderKey(a.order), orderKey(b.order)]; return x[0] - y[0] || x[1] - y[1]; };
   function svgShape(el, cx, cy) {
     const t = el.type, k = el.kind || "";
     const fill = t === "data" && k === "const" ? COLORS.const : COLORS[t];
@@ -467,7 +468,7 @@ const CodeGuide = (function () {
   }
   function svgStrip(f, diff = false) {
     const ordered = f.elements.filter((el) => el.order !== null && el.order !== undefined)
-      .sort((a, b) => { const [x, y] = [orderKey(a.order), orderKey(b.order)]; return x[0] - y[0] || x[1] - y[1]; });
+      .sort(byOrder);
     const rows = [["модуль", ordered.filter((el) => Number.isInteger(el.order))],
                   ["виклик", ordered.filter((el) => typeof el.order === "string")]].filter((r) => r[1].length);
     if (!rows.length) return "";
@@ -492,6 +493,47 @@ const CodeGuide = (function () {
     });
     out.push("</svg>");
     return out.join("");
+  }
+
+  // ---------------------------------------------------------------- L3 player
+  const TYPE_UA = { data: "дані", operation: "операція", syntax_sugar: "цукор", structure: "каркас" };
+  const typeColor = (el) => (el.type === "data" && el.kind === "const" ? COLORS.const : COLORS[el.type]);
+  const playerSteps = (f) => f.elements.filter((el) => el.order !== null && el.order !== undefined).sort(byOrder);
+  // Обгортає в <mark> перше входження назви елемента в рядку; ".map(...)" шукається як ".map(". Не знайшов — null.
+  function markToken(line, name) {
+    const cands = [name, name.replace(/\(\.\.\.\)$/, "("), name.replace(/\(.*$/, ""), name.split(/\s+/)[0]].filter((c) => c && c.length > 1);
+    for (const c of cands) {
+      const i = line.indexOf(c);
+      if (i >= 0) return esc(line.slice(0, i)) + "<mark>" + esc(line.slice(i, i + c.length)) + "</mark>" + esc(line.slice(i + c.length));
+    }
+    return null;
+  }
+  // Код фрагмента на кроці i: поточний рядок і токен підсвічені, на полях — бейджі пройдених кроків, майбутні рядки бліді.
+  function playerCode(f, i) {
+    const steps = playerSteps(f), s = steps[i], fr = f.l3_fragment;
+    const lo = parseInt(String(fr.lines).split("-")[0], 10);
+    const done = new Map();
+    steps.slice(0, i + 1).forEach((st) => { if (Number.isInteger(st.line)) done.set(st.line, (done.get(st.line) || []).concat(st)); });
+    return fr.full_code.split("\n").map((text, k) => {
+      const ln = lo + k, cur = s.line === ln;
+      const badges = (done.get(ln) || []).map((st) => `<span class="b${st === s ? " now" : ""}" style="background:${typeColor(st)}">${esc(st.order)}</span>`).join("");
+      const body = cur ? (markToken(text, String(s.name)) ?? `<mark>${esc(text)}</mark>`) : esc(text);
+      const cls = cur ? "row cur" : done.has(ln) ? "row" : "row dim";
+      return `<div class="${cls}"${cur ? ` style="--c:${typeColor(s)}"` : ""}><span class="ln">${ln}</span><span class="badges">${badges}</span>${body}</div>`;
+    }).join("");
+  }
+  function playerCard(f, i) {
+    const steps = playerSteps(f), s = steps[i], col = typeColor(s);
+    const phase = Number.isInteger(s.order) ? "Завантаження модуля" : "Виклик функції";
+    return `<p class="pl-phase">${phase} · ${i + 1} / ${steps.length}</p>` +
+      `<div class="pl-head"><div class="pl-order" style="background:${col}">${esc(s.order)}</div><div>` +
+      `<div class="pl-name">${esc(s.name)}</div>` +
+      `<span class="pl-pill" style="background:${col}">${TYPE_UA[s.type]}${s.kind ? " · " + esc(s.kind) : ""}</span> ` +
+      `<span class="pl-phase">рядок ${esc(s.line ?? "—")}</span></div></div>` +
+      `<p class="pl-expl">${esc(s.explanation)}</p>` +
+      (s.reading ? `<div class="pl-box"><b>Як читає мова</b>${esc(s.reading)}</div>` : "") +
+      (s.equivalent ? `<div class="pl-box"><b>Без цукру</b><code>${esc(s.equivalent)}</code></div>` : "") +
+      (s.side_effect ? `<div class="pl-box pl-warn"><b>⚠️ Побічний ефект</b>${esc(s.side_effect)}</div>` : "");
   }
 
   // --------------------------------------------------------------- sections
@@ -709,7 +751,7 @@ const CodeGuide = (function () {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
   }
 
-  return { TYPES, PALETTES, GuideError, validate, validateDiff, themeCss, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback, cyElements, l1PanelHtml };
+  return { TYPES, PALETTES, GuideError, validate, validateDiff, themeCss, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback, cyElements, l1PanelHtml, playerSteps, markToken, playerCode, playerCard };
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>
