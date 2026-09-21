@@ -88,9 +88,6 @@ test("render за замовчуванням темний: палітра dark �
   assert.ok(out.includes("--data: #93C2DA;"));
   assert.ok(out.includes("classDef data fill:#93C2DA"));
 });
-test("один Mermaid-блок на L1 і по одному на файл", () => {
-  assert.equal(html.split('<pre class="mermaid">').length - 1, 1 + exampleData().files.length);
-});
 test("Mermaid стилізує через classDef усередині діаграми", () => {
   assert.match(html, /classDef structure/);
   assert.match(html, /classDef operation/);
@@ -288,4 +285,24 @@ test("панель екранює id і summary", () => {
   const out = CG.l1PanelHtml(l1Of([{ id: "<x>", summary: "<img src=x>" }], []), "<x>");
   assert.ok(!out.includes("<img"));
   assert.ok(out.includes("&lt;x&gt;"));
+});
+
+// --- L1 у сторінці ----------------------------------------------------------------
+test("L1 — інтерактивний граф: контейнер, панель-огляд, список; Mermaid лише на L2", () => {
+  const html = CG.render(exampleData());
+  assert.equal(html.split('id="cy-l1"').length - 1, 1);
+  assert.ok(html.includes('id="l1-panel"'));
+  assert.ok(html.includes("вузлів: 2 · залежностей: 1"));
+  assert.ok(html.includes("Список модулів (2)"));
+  assert.equal(html.split('<pre class="mermaid">').length - 1, exampleData().files.length);
+});
+test("CDN: mermaid, elk → cytoscape → cytoscape-elk саме в такому порядку", () => {
+  const i = (s) => TEMPLATE.indexOf(s);
+  for (const s of ["mermaid/11.15.0/mermaid.min.js", "elkjs@0.9.3/lib/elk.bundled.js", "cytoscape/3.30.2/cytoscape.min.js", "cytoscape-elk@2.2.0/dist/cytoscape-elk.js"]) assert.ok(i(s) > 0, s);
+  assert.ok(i("elkjs@0.9.3") < i("cytoscape/3.30.2"));
+  assert.ok(i("cytoscape/3.30.2") < i("cytoscape-elk@2.2.0"));
+});
+test("diff-режим L1 лишається на Mermaid, без Cytoscape-контейнера", () => {
+  const d = JSON.parse(readFileSync(join(HERE, "..", "..", "code-anatomy-diff", "references", "worked_example_diff.md"), "utf8").match(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/)[1]);
+  assert.ok(!CG.render(d).includes('id="cy-l1"'));
 });

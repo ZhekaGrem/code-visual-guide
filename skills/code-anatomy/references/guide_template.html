@@ -75,6 +75,27 @@
   .strip text.space { fill: var(--muted); font-size: 11px; font-weight: 600; }
   .why { background: var(--sunk); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
   footer { margin-top: 32px; color: var(--muted); font-size: .9em; border-top: 1px solid var(--line); padding-top: 12px; }
+  .l1 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+  @media (max-width: 900px) { .l1 { grid-template-columns: 1fr; } }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .toolbar input[type=search] { flex: 1; min-width: 160px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px;
+    font: inherit; background: var(--sunk); color: var(--ink); }
+  .toolbar label { color: var(--muted); font-size: .9em; display: inline-flex; gap: 6px; align-items: center; }
+  #cy-l1 { height: 560px; border: 1px solid var(--line); border-radius: 10px;
+    background: radial-gradient(circle, var(--grid) 1px, transparent 1px) 0 0 / 18px 18px, var(--sunk); }
+  .panel { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--sunk); align-self: start; }
+  .panel h3 { margin: 0 0 6px; font: 600 16px/1.3 var(--font-mono); word-break: break-word; }
+  .panel a { cursor: pointer; }
+  .panel ul { margin: 4px 0 10px; padding-left: 18px; }
+  .dep-out { color: var(--accent); font-weight: 600; margin: 10px 0 2px; }
+  .dep-in { color: var(--pink); font-weight: 600; margin: 10px 0 2px; }
+  .l1-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85em; color: var(--muted); margin-top: 8px; }
+  .l1-legend span { display: inline-flex; gap: 6px; align-items: center; }
+  .l1-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .l1-legend .k-entry { background: var(--accent); }
+  .l1-legend .k-node { background: var(--structure); }
+  .l1-legend .k-orphan { border: 2px dashed var(--warn); }
+  .l1-legend .k-hub { background: var(--hub); border: 1px solid var(--edge); }
 </style>
 </head>
 <body>
@@ -362,6 +383,64 @@ const CodeGuide = (function () {
       `<p class="dep-out">Залежить від (${outs.length})</p>${list(outs, "ні від кого")}` +
       `<p class="dep-in">Від нього залежать (${ins.length})</p>${list(ins, "ніхто")}`;
   }
+  function cyStyle(p) {
+    return [
+      { selector: "node", style: { shape: "round-rectangle", width: "data(w)", height: "data(h)", "background-color": p.structure,
+        label: "data(label)", color: p.onType, "text-valign": "center", "text-halign": "center", "text-wrap": "wrap",
+        "font-size": 17, "font-weight": 600, "font-family": "IBM Plex Sans, Segoe UI, system-ui, sans-serif" } },
+      { selector: "node.hub", style: { "background-color": p.hub, color: p.ink, "border-width": 1, "border-color": p.edge } },
+      { selector: "node.entry", style: { "background-color": p.accent, color: p.onType } },
+      { selector: "node.orphan", style: { "background-color": p.sunk, color: p.warn, "border-width": 2, "border-style": "dashed", "border-color": p.warn } },
+      { selector: "node.entry.orphan", style: { "background-color": p.accent, color: p.onType } },
+      { selector: "edge", style: { width: 1.6, "line-color": p.edge, "target-arrow-color": p.edge, "target-arrow-shape": "triangle",
+        "curve-style": "bezier", "arrow-scale": 0.9 } },
+      { selector: "edge.tohub.fadehub", style: { opacity: 0.12 } },
+      { selector: "edge.cycle", style: { "line-color": p.warn, "target-arrow-color": p.warn, width: 2.5 } },
+      { selector: ".faded", style: { opacity: 0.1 } },
+      { selector: "node.hit", style: { "border-width": 4, "border-color": p.syntax_sugar, "border-style": "solid" } },
+      { selector: "node.sel", style: { "border-width": 4, "border-color": p.glow, "border-style": "solid" } },
+      { selector: "edge.out", style: { "line-color": p.accent, "target-arrow-color": p.accent, width: 2.6, opacity: 1 } },
+      { selector: "edge.in", style: { "line-color": p.pink, "target-arrow-color": p.pink, width: 2.6, opacity: 1 } },
+    ];
+  }
+  const ELK_LAYOUT = { name: "elk", fit: true, padding: 24, elk: { algorithm: "layered", "elk.direction": "RIGHT",
+    "elk.layered.spacing.nodeNodeBetweenLayers": 90, "elk.spacing.nodeNode": 22,
+    "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", "elk.edgeRouting": "SPLINES" } };
+  // Браузер: оживляє #cy-l1. Без Cytoscape (офлайн) лишає пояснення — панель-огляд і список модулів уже в розмітці.
+  function mountL1(data, theme) {
+    const box = document.getElementById("cy-l1");
+    if (!box) return;
+    if (!window.cytoscape) {
+      box.innerHTML = `<p class="sub" style="padding:12px">Граф не завантажився: потрібен інтернет (Cytoscape з CDN). Модулі — у списку нижче.</p>`;
+      return;
+    }
+    const l1 = data.l1, panel = document.getElementById("l1-panel");
+    const cy = window.cytoscape({ container: box, elements: cyElements(l1), style: cyStyle(PALETTES[theme]), layout: ELK_LAYOUT, minZoom: 0.2, maxZoom: 3 });
+    const select = (id) => {
+      cy.elements().removeClass("faded out in sel");
+      panel.innerHTML = l1PanelHtml(l1, id);
+      panel.querySelectorAll("a[data-node]").forEach((a) => { a.onclick = () => select(a.dataset.node); });
+      if (id === null) return;
+      const node = cy.getElementById(id), outs = node.outgoers("edge"), ins = node.incomers("edge");
+      cy.elements().addClass("faded");
+      node.removeClass("faded").addClass("sel");
+      outs.removeClass("faded").addClass("out"); outs.targets().removeClass("faded");
+      ins.removeClass("faded").addClass("in"); ins.sources().removeClass("faded");
+    };
+    const fade = document.getElementById("l1-fadehub");
+    const applyFade = () => cy.edges(".tohub").toggleClass("fadehub", fade.checked);
+    fade.onchange = applyFade;
+    applyFade();
+    document.getElementById("l1-fit").onclick = () => cy.animate({ fit: { padding: 24 }, duration: 300 });
+    document.getElementById("l1-q").oninput = (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      cy.nodes().removeClass("hit");
+      if (q) cy.nodes().filter((n) => n.id().toLowerCase().includes(q)).addClass("hit");
+    };
+    cy.on("tap", "node", (ev) => select(ev.target.id()));
+    cy.on("tap", (ev) => { if (ev.target === cy) select(null); });
+    select(null);
+  }
 
   // ---------------------------------------------------------------- SVG L3
   const orderKey = (o) => (Number.isInteger(o) ? [0, o] : [1, parseInt(String(o).slice(1), 10)]);
@@ -456,12 +535,22 @@ const CodeGuide = (function () {
     return `<header><div><h1>Code guide — ${esc(data.project)}</h1>` +
       `<p class="sub">${esc(data.generated)} · commit ${esc(data.git_commit || "—")} · depth ${esc(data.depth)} · ${langs}</p></div>${themeButton(theme)}</header>`;
   }
+  function l1Legend() {
+    return `<div class="l1-legend"><span><i class="k-entry"></i> точка входу</span><span><i class="k-node"></i> модуль / файл</span>` +
+      `<span><i class="k-orphan"></i> сирота: ніхто не імпортує</span><span><i class="k-hub"></i> хаб: ≥ ${HUB_MIN_IN} вхідних ребер</span></div>`;
+  }
   function l1Html(data) {
     const l1 = data.l1;
     const tree = l1.nodes.map((n) => `<li><code>${esc(n.id)}</code> — ${esc(n.summary || "")}</li>`).join("");
-    const callouts = (l1.callouts || []).map((c) => callout(c.kind || "cycle", `${c.where || ""}: ${c.note || ""}`)).join("");
-    return `<section id="l1"><h2>L1 — Проєкт</h2><details open><summary>Файли та залежності</summary><ul>${tree}</ul>${callouts}` +
-      `<pre class="mermaid">${esc(mermaidL1(l1))}</pre></details></section>`;
+    return `<section id="l1"><h2>L1 — Проєкт</h2>` +
+      `<p class="sub">Клік на вузол підсвічує його залежності. Розмір вузла — кількість файлів. Колесо — зум, тягни фон — панорама.</p>` +
+      `<div class="l1"><div><div class="toolbar">` +
+      `<input type="search" id="l1-q" placeholder="Знайти модуль…" aria-label="Знайти модуль">` +
+      `<label><input type="checkbox" id="l1-fadehub" checked> приглушити ребра до хабів</label>` +
+      `<button type="button" class="btn" id="l1-fit">Вписати</button></div>` +
+      `<div id="cy-l1" role="img" aria-label="Граф залежностей між модулями"></div>${l1Legend()}</div>` +
+      `<aside class="panel" id="l1-panel">${l1PanelHtml(l1, null)}</aside></div>` +
+      `<details><summary>Список модулів (${l1.nodes.length})</summary><ul>${tree}</ul></details></section>`;
   }
   function l2Html(data) {
     const note = data.l2_note ? `<p class="sub">${esc(data.l2_note)}</p>` : "";
@@ -602,6 +691,7 @@ const CodeGuide = (function () {
     document.documentElement.dataset.theme = theme;
     document.title = `${data.mode === "diff" ? "Code diff" : "Code guide"} — ${data.project}`;
     runMermaid(theme, first ? 1500 : 0);
+    mountL1(data, theme);
     app.querySelector("[data-theme-toggle]").onclick = () => {
       const next = theme === "dark" ? "light" : "dark";
       try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* приватне вікно — тема просто не запам'ятається */ }
@@ -623,5 +713,8 @@ const CodeGuide = (function () {
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/dist/cytoscape-elk.js"></script>
 </body>
 </html>
