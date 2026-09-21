@@ -1,0 +1,15 @@
+# --- Generated guides: they live in the user's storage, not in this repo ---
+code/
+code_guide_*.md
+**/artifacts/code_guide_*.html
+code_diff_*.md
+**/artifacts/code_diff_*.html
+
+# --- OS / editor ----------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/

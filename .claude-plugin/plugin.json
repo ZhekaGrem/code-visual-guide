@@ -1,0 +1,16 @@
+{
+  "name": "code-anatomy",
+  "description": "A visual, block-by-block guide to a code repository: project imports, file structure, and the order in which the language actually executes a fragment. Every element is data, operation, syntax sugar or structure. Covers JS/TS with Node.js, Python, Go, Java, SQL and MongoDB. A second skill shows what a commit or range changed, as before/after columns.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ZhekaGrem"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "code-reading",
+    "visualization",
+    "architecture",
+    "onboarding"
+  ]
+}

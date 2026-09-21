@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "code-anatomy",
+  "owner": {
+    "name": "ZhekaGrem"
+  },
+  "metadata": {
+    "description": "code-anatomy - a visual guide to any repository in three levels: project, file, expression."
+  },
+  "plugins": [
+    {
+      "name": "code-anatomy",
+      "source": "./",
+      "description": "Maps a repository into data, operations, syntax sugar and structure, and numbers the order in which the language really executes a fragment: hoisting, coercion, static init, SQL logical order. Also shows what a commit changed, before and after, side by side."
+    }
+  ]
+}
