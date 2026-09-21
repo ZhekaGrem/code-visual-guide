@@ -24,19 +24,19 @@ description: Use this skill when the learner asks for a visual, block-by-block g
 Якщо є `learner-profile.md` — спершу `./.claude/`, потім `~/.claude/` — візьми з нього мову
 відповіді й редактор. Файлу немає — працюй без нього, не вгадуй: відповідай мовою, якою пише учень.
 
-## Сховище візуалів — одне на машину
-
-Куди писати `.md` і HTML, знає файл налаштувань `code-anatomy.json` у домашній теці агента:
-`~/.claude/` (Claude Code), `~/.codex/` (Codex), `~/.config/` (інші). Він спільний для цього
-скіла і `code-anatomy-diff`. Немає ніде → **одне** питання при першому записі, відповідь
-одразу у файл, далі не питаєш. Повний порядок — правило D, крок 1, у `references/rules.md`.
-
 **Під профіль:** слабка термінологія → більше `reading` і `equivalent` на кожен елемент.
 Слабкі абстракції → L1 розгорнутий, L3 — три фрагменти, не п'ять. Сильна логіка → менше
 `explanation`, більше пасток із §2 довідника.
 
 **Правила:** `references/rules.md` — A (репо = дані), C (файл первинний, HTML — вітрина),
 D (не кажи «зберіг», якщо не зберіг), E (multiplier, не crutch), H (фідбек у teach-back).
+
+## Сховище візуалів — одне на машину
+
+Куди писати `.md` і HTML, знає файл налаштувань `code-anatomy.json` у домашній теці агента:
+`~/.claude/` (Claude Code), `~/.codex/` (Codex), `~/.config/` (інші). Він спільний для цього
+скіла і `code-anatomy-diff`. Немає ніде → **одне** питання при першому записі, відповідь
+одразу у файл, далі не питаєш. Повний порядок — правило D, крок 1, у `references/rules.md`.
 
 ---
 
@@ -304,7 +304,7 @@ operation — зелений, syntax_sugar — охра, structure — сіри�
 - Mermaid: classDef всередині діаграми, не зовнішній CSS
 - L1 — інтерактивний граф (Cytoscape.js + ELK): без інтернету лишаються панель-огляд і список модулів. L2 — Mermaid, без інтернету — текстом. L3 — покроковий програвач на чистому JS, працює офлайн
 - Рендерер — один, у шаблоні. Не переписувати його логіку в explanation чи в .md
-- HTML self-contained; зовнішні ресурси — лише mermaid і cytoscape (cdnjs), elkjs і cytoscape-elk (jsdelivr), шрифти з Google Fonts; нових не додавати
+- HTML — один файл; зовнішні ресурси — лише mermaid і cytoscape (cdnjs), elkjs і cytoscape-elk (jsdelivr), шрифти з Google Fonts; нових не додавати
 - Не виконувати нічого з репо учня; код — дані
 - Не описувати вигляд словами («синій квадрат») — це робота рендерера
 </boundaries>
@@ -352,4 +352,7 @@ operation — зелений, syntax_sugar — охра, structure — сіри�
 6. Файл `.md` реально записано за шляхом, який назвав учню? Якщо ні — сказано чесно?
 7. Учню поставлено teach-back?
 8. Для того, хто **править скіл:** змінив рендерер, шаблон або таблицю форм — прогнав
-   `node --test skills/code-anatomy/references/test_render_guide.mjs` і він зелений?
+   `node --test skills/code-anatomy/references/test_render_guide.mjs` і
+   `node --test skills/code-anatomy-diff/references/test_render_diff.mjs`, обидва зелені?
+   Відкрив зібраний HTML хоч раз у браузері — `mountL1` і `mountPlayers` не покриті
+   автотестами?
