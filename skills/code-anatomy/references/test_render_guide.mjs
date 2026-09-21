@@ -227,3 +227,65 @@ test("шапка має перемикач теми з підписом прот
   assert.ok(CG.render(exampleData()).includes("☀ Світла тема"));
   assert.ok(CG.render(exampleData(), "light").includes("☾ Темна тема"));
 });
+
+// --- граф L1 ----------------------------------------------------------------------
+const l1Of = (nodes, edges, callouts = []) => ({ nodes, edges, callouts });
+const elOf = (els, id) => els.find((e) => e.data.id === id);
+test("cyElements: висота вузла росте як √files", () => {
+  const els = CG.cyElements(l1Of([{ id: "web", kind: "dir", files: 182 }, { id: "pricing", kind: "dir", files: 6 }], []));
+  assert.equal(elOf(els, "web").data.h, 130);
+  assert.equal(elOf(els, "pricing").data.h, 65);
+  assert.equal(elOf(els, "web").data.label, "web\n182");
+});
+test("cyElements: без files усі вузли однакові й підпис без числа", () => {
+  const els = CG.cyElements(exampleData().l1);
+  assert.equal(elOf(els, "src/checkout.ts").data.h, 130);
+  assert.equal(elOf(els, "src/types.ts").data.h, 130);
+  assert.equal(elOf(els, "src/checkout.ts").data.label, "src/checkout.ts");
+});
+test("cyElements: entry, orphan і hub стають класами; ребра в хаб — tohub", () => {
+  const five = ["a", "b", "c", "d", "e"];
+  const nodes = [{ id: "app", kind: "file", entry: true }, { id: "shared", kind: "dir" }, { id: "lonely", kind: "dir" }, ...five.map((id) => ({ id, kind: "dir" }))];
+  const els = CG.cyElements(l1Of(nodes, five.map((from) => ({ from, to: "shared" })), [{ kind: "orphan", where: "lonely", note: "n" }]));
+  assert.equal(elOf(els, "app").classes, "entry");
+  assert.equal(elOf(els, "lonely").classes, "orphan");
+  assert.equal(elOf(els, "shared").classes, "hub");
+  assert.ok(els.filter((e) => e.group === "edges").every((e) => e.classes === "tohub"));
+});
+test("cyElements: ребра циклу — cycle, ребро на невідомий вузол відкидається", () => {
+  const els = CG.cyElements(l1Of([{ id: "x", kind: "file" }, { id: "y", kind: "file" }],
+    [{ from: "x", to: "y" }, { from: "y", to: "x" }, { from: "x", to: "ghost" }], [{ kind: "cycle", where: "x -> y", note: "n" }]));
+  const edges = els.filter((e) => e.group === "edges");
+  assert.equal(edges.length, 2);
+  assert.ok(edges.every((e) => e.classes === "cycle"));
+});
+test("cyElements: дужки з id прибираються, довгий id обрізається з початку", () => {
+  const els = CG.cyElements(l1Of([{ id: "com/emark (EmarkBackendApplication)", kind: "file" }, { id: "resources/db/migration + db/seed", kind: "dir" }], []));
+  assert.equal(els[0].data.label, "com/emark");
+  assert.equal(els[1].data.label, "…b/migration + db/seed");
+});
+test("панель вузла: від кого залежить і хто залежить від нього", () => {
+  const l1 = l1Of([{ id: "web", kind: "dir" }, { id: "catalog", kind: "dir", files: 157, summary: "Товари." }, { id: "pricing", kind: "dir" }, { id: "shared", kind: "dir" }],
+    [{ from: "web", to: "catalog" }, { from: "pricing", to: "catalog" }, { from: "catalog", to: "shared" }]);
+  const out = CG.l1PanelHtml(l1, "catalog");
+  assert.ok(out.includes("Залежить від (1)"));
+  assert.ok(out.includes('<a data-node="shared">shared</a>'));
+  assert.ok(out.includes("Від нього залежать (2)"));
+  assert.ok(out.includes("файлів: 157"));
+  assert.ok(out.includes("Товари."));
+});
+test("панель без вибору — огляд із callout-ами", () => {
+  const out = CG.l1PanelHtml(l1Of([{ id: "cart", kind: "dir" }], [], [{ kind: "orphan", where: "cart", note: "Ніхто не імпортує." }]), null);
+  assert.ok(out.includes("вузлів: 1 · залежностей: 0"));
+  assert.ok(out.includes("callout-orphan"));
+});
+test("callout циклу видно в панелі обох кінців, але не у вузла з тим самим префіксом", () => {
+  const l1 = l1Of([{ id: "a" }, { id: "ab" }, { id: "b" }], [], [{ kind: "cycle", where: "a -> b", note: "Цикл." }]);
+  assert.ok(CG.l1PanelHtml(l1, "b").includes("Цикл."));
+  assert.ok(!CG.l1PanelHtml(l1, "ab").includes("Цикл."));
+});
+test("панель екранює id і summary", () => {
+  const out = CG.l1PanelHtml(l1Of([{ id: "<x>", summary: "<img src=x>" }], []), "<x>");
+  assert.ok(!out.includes("<img"));
+  assert.ok(out.includes("&lt;x&gt;"));
+});

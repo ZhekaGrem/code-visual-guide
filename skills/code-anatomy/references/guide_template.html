@@ -311,6 +311,58 @@ const CodeGuide = (function () {
     return lines.join("\n");
   }
 
+  // ---------------------------------------------------------------- L1 graph
+  const HUB_MIN_IN = 5;                                                           // ≥ 5 вхідних ребер → хаб
+  const nodeFiles = (n) => (Number.isInteger(n.files) && n.files > 0 ? n.files : 1);
+  const shortLabel = (id) => {
+    const t = String(id).replace(/\s*\(.*\)$/, "");
+    return t.length > 22 ? "…" + t.slice(-21) : t;
+  };
+  const whereIds = (c) => String(c.where || "").split(" -> ");
+  function knownEdges(l1) {
+    const ids = new Set(l1.nodes.map((n) => n.id));
+    return l1.edges.filter((e) => ids.has(e.from) && ids.has(e.to));
+  }
+  // Елементи для Cytoscape. Розмір, підпис і класи рахуються тут, щоб їх можна було перевірити без браузера.
+  function cyElements(l1) {
+    const edges = knownEdges(l1);
+    const inDeg = new Map(l1.nodes.map((n) => [n.id, 0]));
+    edges.forEach((e) => inDeg.set(e.to, inDeg.get(e.to) + 1));
+    const callouts = l1.callouts || [];
+    const orphans = new Set(callouts.filter((c) => c.kind === "orphan").map((c) => c.where));
+    const cycles = callouts.filter((c) => c.kind === "cycle").map(whereIds);
+    const maxFiles = Math.max(1, ...l1.nodes.map(nodeFiles));
+    const nodes = l1.nodes.map((n) => {
+      const files = nodeFiles(n), label = shortLabel(n.id);
+      const h = Math.round(50 + 80 * Math.sqrt(files / maxFiles));
+      const classes = [n.entry ? "entry" : "", orphans.has(n.id) ? "orphan" : "", inDeg.get(n.id) >= HUB_MIN_IN ? "hub" : ""].filter(Boolean).join(" ");
+      return { group: "nodes", data: { id: n.id, label: files > 1 ? `${label}\n${files}` : label, h, w: Math.max(Math.round(h * 1.6), label.length * 10 + 28) }, classes };
+    });
+    const edgeEls = edges.map((e, i) => ({
+      group: "edges", data: { id: `e${i}`, source: e.from, target: e.to },
+      classes: [inDeg.get(e.to) >= HUB_MIN_IN ? "tohub" : "", cycles.some((w) => w.includes(e.from) && w.includes(e.to)) ? "cycle" : ""].filter(Boolean).join(" "),
+    }));
+    return nodes.concat(edgeEls);
+  }
+  // Права панель L1: огляд (id = null) або обраний вузол із сусідами.
+  function l1PanelHtml(l1, id) {
+    const callouts = l1.callouts || [];
+    const n = id === null ? null : l1.nodes.find((x) => x.id === id);
+    if (!n) {
+      return `<h3>Огляд</h3><p class="sub">вузлів: ${l1.nodes.length} · залежностей: ${l1.edges.length}</p>` +
+        `<p class="sub">Клікни вузол на графі: побачиш, від кого він залежить і хто залежить від нього.</p>` +
+        callouts.map((c) => callout(c.kind, `${c.where || ""}: ${c.note || ""}`)).join("");
+    }
+    const edges = knownEdges(l1);
+    const outs = edges.filter((e) => e.from === id).map((e) => e.to);
+    const ins = edges.filter((e) => e.to === id).map((e) => e.from);
+    const list = (ids, none) => (ids.length ? `<ul>${ids.map((x) => `<li><a data-node="${esc(x)}">${esc(x)}</a></li>`).join("")}</ul>` : `<p class="sub">${none}</p>`);
+    const own = callouts.filter((c) => whereIds(c).includes(id)).map((c) => callout(c.kind, c.note || "")).join("");
+    return `<h3>${esc(n.id)}</h3><p class="sub">${esc(n.kind || "")} · файлів: ${nodeFiles(n)}</p><p>${esc(n.summary || "")}</p>${own}` +
+      `<p class="dep-out">Залежить від (${outs.length})</p>${list(outs, "ні від кого")}` +
+      `<p class="dep-in">Від нього залежать (${ins.length})</p>${list(ins, "ніхто")}`;
+  }
+
   // ---------------------------------------------------------------- SVG L3
   const orderKey = (o) => (Number.isInteger(o) ? [0, o] : [1, parseInt(String(o).slice(1), 10)]);
   function svgShape(el, cx, cy) {
@@ -567,7 +619,7 @@ const CodeGuide = (function () {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
   }
 
-  return { TYPES, PALETTES, GuideError, validate, validateDiff, themeCss, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback };
+  return { TYPES, PALETTES, GuideError, validate, validateDiff, themeCss, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback, cyElements, l1PanelHtml };
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>
