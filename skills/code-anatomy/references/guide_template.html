@@ -3,44 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
 <title>Code guide</title>
 <style>
-  /* Самодостатній стиль. Єдиний зовнішній ресурс — mermaid із cdnjs для L1/L2. */
-  :root {
-    --ink: #1a1a1a; --muted: #5b6470; --line: #d7dce3; --bg-soft: #f4f6f9;
-    --data: #3B82F6; --const: #1D4ED8; --operation: #10B981;
-    --sugar: #F59E0B; --structure: #6B7280; --warn: #DC2626;
-  }
+  /* Кольори — лише var(--…): значення пише рендерер (<style id="palette"> з PALETTES). Тут — шрифти й розкладка. */
+  :root { color-scheme: dark;
+    --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: "Segoe UI", Arial, system-ui, sans-serif;
-    color: var(--ink); font-size: 15px; line-height: 1.45; background: #fff; }
-  body { padding: 24px 16px; max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 1.6rem; margin: 0 0 4px; }
-  h2 { font-size: 1.2rem; margin: 28px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--line); }
+  html, body { margin: 0; padding: 0; font-family: var(--font-body); color: var(--ink); font-size: 15px; line-height: 1.5; background: var(--bg); }
+  body { padding: 24px 16px 60px; max-width: 1280px; margin: 0 auto; }
+  code, kbd, pre, .code { font-family: var(--font-mono); font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+  header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+  h1 { font: 700 clamp(22px, 3vw, 32px)/1.1 var(--font-display); letter-spacing: -.02em; margin: 0 0 6px; }
+  h2 { font: 700 20px/1.2 var(--font-display); letter-spacing: -.01em; margin: 32px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  a { color: var(--accent); }
   .sub { color: var(--muted); margin: 0 0 12px; }
-  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg-soft);
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--sunk);
     border: 1px solid var(--line); font-size: .85em; margin-right: 4px; }
-  details { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; }
+  .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer; font: inherit; }
+  .btn:hover { background: var(--sunk); }
+  button:focus-visible, input:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: .8em; background: var(--sunk); }
+  details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 12px 0; background: var(--surface); }
   summary { cursor: pointer; font-weight: 600; }
-  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 10px 12px; background: var(--bg-soft);
-    border-radius: 6px; margin: 12px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 10px 12px; background: var(--sunk);
+    border-radius: 8px; margin: 12px 0; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
   .swatch-data { background: var(--data); }
   .swatch-const { background: var(--const); }
   .swatch-operation { background: var(--operation); }
-  .swatch-sugar { background: var(--sugar); }
+  .swatch-sugar { background: var(--syntax_sugar); }
   .swatch-structure { background: var(--structure); }
   .swatch-warn { background: var(--warn); }
-  .callout { border-left: 4px solid var(--warn); background: #fff5f5; padding: 6px 10px; margin: 8px 0; border-radius: 4px; }
-  .callout-orphan { border-color: var(--structure); background: var(--bg-soft); }
-  .error { border: 2px solid var(--warn); background: #fff5f5; padding: 12px; border-radius: 6px; white-space: pre-wrap; }
+  .callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 6px 10px; margin: 8px 0; border-radius: 6px; }
+  .callout-orphan { border-color: var(--structure); background: var(--sunk); }
+  .error { border: 2px solid var(--warn); background: var(--warn-soft); padding: 12px; border-radius: 6px; white-space: pre-wrap; }
   pre.mermaid { background: transparent; overflow-x: auto; }
   table.elements { border-collapse: collapse; width: 100%; font-size: .92em; }
   table.elements th, table.elements td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
   table.elements td.t-data { border-left: 4px solid var(--data); }
   table.elements td.t-operation { border-left: 4px solid var(--operation); }
-  table.elements td.t-syntax_sugar { border-left: 4px solid var(--sugar); }
+  table.elements td.t-syntax_sugar { border-left: 4px solid var(--syntax_sugar); }
   table.elements td.t-structure { border-left: 4px solid var(--structure); }
   .frag { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 760px) { .frag { grid-template-columns: 1fr; } }
@@ -49,22 +58,22 @@
   .col { min-width: 0; }
   .col h3 { font-size: .8rem; letter-spacing: .08em; color: var(--muted); margin: 4px 0 6px; }
   .absent { font-style: italic; }
-  .code div.chg { background: #e9edf3; }
-  .code .gl { width: 1.2em; flex: none; font-weight: 700; }
-  .code { font-family: Consolas, "Courier New", monospace; font-size: .88em; background: var(--bg-soft);
-    border-radius: 6px; padding: 8px 0; overflow-x: auto; }
+  .code { font-size: .88em; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 0; overflow-x: auto; }
   .code div { display: flex; padding: 0 10px; white-space: pre; }
-  .code .ln { width: 2.5em; color: var(--muted); user-select: none; flex: none; }
+  .code div.chg { background: color-mix(in srgb, var(--glow) 14%, transparent); }
+  .code .gl { width: 1.2em; flex: none; font-weight: 700; }
+  .code .ln { width: 2.5em; color: var(--code-ln); user-select: none; flex: none; }
   .line-data { border-left: 4px solid var(--data); }
   .line-operation { border-left: 4px solid var(--operation); }
-  .line-sugar { border-left: 4px solid var(--sugar); }
+  .line-sugar { border-left: 4px solid var(--syntax_sugar); }
   .line-structure { border-left: 4px solid var(--structure); }
   .strip { overflow-x: auto; }
   .strip svg { display: block; max-width: 100%; height: auto; font-family: inherit; }
-  .strip text { font-size: 11px; fill: #fff; }
+  .strip text { font-size: 11px; }
   .strip text.label { fill: var(--ink); font-size: 10px; }
   .strip text.space { fill: var(--muted); font-size: 11px; font-weight: 600; }
-  .why { background: var(--bg-soft); border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
+  .why { background: var(--sunk); border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
   footer { margin-top: 32px; color: var(--muted); font-size: .9em; border-top: 1px solid var(--line); padding-top: 12px; }
 </style>
 </head>
@@ -81,8 +90,28 @@ const CodeGuide = (function () {
   "use strict";
 
   const TYPES = ["data", "operation", "syntax_sugar", "structure"];
-  const COLORS = { data: "#3B82F6", const: "#1D4ED8", operation: "#10B981",
-                   syntax_sugar: "#F59E0B", structure: "#6B7280", warn: "#DC2626" };
+  // Єдине джерело кольорів. Ключі стають CSS-змінними: accentSoft → --accent-soft, syntax_sugar → --syntax_sugar.
+  const PALETTES = {
+    // Темна (основна): Woodland #44472A + Willow Brook #E4EDDD
+    dark: { bg: "#1A1B11", surface: "#232519", sunk: "#1E2015", ink: "#E4EDDD", muted: "#A7AE98", line: "#3A3D27",
+      accent: "#E4EDDD", accentSoft: "#44472A", glow: "#C8DDB0", pink: "#D7A6E3",
+      data: "#93C2DA", const: "#6A9FBC", operation: "#B3D57A", syntax_sugar: "#E6BF63", structure: "#8E9170",
+      warn: "#E8876B", warnSoft: "#3A2419", hub: "#44472A", edge: "#5C5F42", grid: "#2A2C1D",
+      codeBg: "#15160E", codeInk: "#E4EDDD", codeLn: "#676A4E", onType: "#1A1B11", mermaid: "dark" },
+    // Світла: Screamin' Green #41ED89 (заливки) + Salt Box #68596F (текст, каркас)
+    light: { bg: "#F6F4F7", surface: "#FFFFFF", sunk: "#EFEBF1", ink: "#2A2230", muted: "#68596F", line: "#DDD5E1",
+      accent: "#0B8A46", accentSoft: "#DCFBE9", glow: "#41ED89", pink: "#B8479A",
+      data: "#4C6FD6", const: "#34479A", operation: "#0E9384", syntax_sugar: "#D98612", structure: "#68596F",
+      warn: "#D2423A", warnSoft: "#FBE7E5", hub: "#A99BB0", edge: "#B9AFBF", grid: "#E4DDE8",
+      codeBg: "#2A2230", codeInk: "#F1ECF4", codeLn: "#8A7C92", onType: "#FFFFFF", mermaid: "neutral" },
+  };
+  let COLORS = PALETTES.dark;   // активна палітра; render() перемикає її на початку кожного виклику
+  const cssName = (k) => "--" + k.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+  function themeCss(theme) {
+    const vars = Object.entries(PALETTES[theme]).filter(([k]) => k !== "mermaid").map(([k, v]) => `${cssName(k)}: ${v};`).join(" ");
+    return `<style id="palette">:root { color-scheme: ${theme}; ${vars} }</style>`;
+  }
+  const themeButton = (theme) => `<button type="button" class="btn" data-theme-toggle>${theme === "dark" ? "☀ Світла тема" : "☾ Темна тема"}</button>`;
   const FLAG_KINDS = new Set(["async", "decorator", "optional_chaining"]);        // прапорець / трикутник; інші синтаксис_цукру — шестикутник
   const DIAMOND_KINDS = new Set(["if", "loop"]);                                   // ромб
   const ORDER_RE = /^f\d+$/;
@@ -206,13 +235,14 @@ const CodeGuide = (function () {
   }
   const SAME_DEF = "classDef same opacity:0.45";
   function classDefs() {
+    const on = COLORS.onType;
     return [
-      `classDef data fill:${COLORS.data},color:#fff`,
-      `classDef const fill:${COLORS.const},color:#fff`,
-      `classDef operation fill:${COLORS.operation},color:#fff`,
-      `classDef syntax_sugar fill:${COLORS.syntax_sugar},color:#1a1a1a`,
-      `classDef structure fill:${COLORS.structure},color:#fff,stroke-dasharray:4 2`,
-      `classDef orphan fill:${COLORS.structure},color:#fff,stroke:${COLORS.warn},stroke-dasharray:4 2`,
+      `classDef data fill:${COLORS.data},color:${on}`,
+      `classDef const fill:${COLORS.const},color:${on}`,
+      `classDef operation fill:${COLORS.operation},color:${on}`,
+      `classDef syntax_sugar fill:${COLORS.syntax_sugar},color:${on}`,
+      `classDef structure fill:${COLORS.structure},color:${on},stroke-dasharray:4 2`,
+      `classDef orphan fill:${COLORS.structure},color:${on},stroke:${COLORS.warn},stroke-dasharray:4 2`,
     ];
   }
   function mermaidL1(l1, diff = false) {
@@ -294,7 +324,7 @@ const CodeGuide = (function () {
         ? `<polygon class="sugar-tri" points="${cx - 18},${cy - 14} ${cx + 18},${cy - 14} ${cx},${cy + 16}" fill="${fill}"${stroke}/>`
         : `<polygon class="sugar-hex" points="${cx},${cy - 18} ${cx + 16},${cy - 9} ${cx + 16},${cy + 9} ${cx},${cy + 18} ${cx - 16},${cy + 9} ${cx - 16},${cy - 9}" fill="${fill}"${stroke}/>`;
     }
-    return `<rect x="${cx - 20}" y="${cy - 14}" width="40" height="28" fill="#fff" stroke="${fill}" stroke-dasharray="4 2" stroke-width="2"${stroke}/>`;
+    return `<rect x="${cx - 20}" y="${cy - 14}" width="40" height="28" fill="${COLORS.surface}" stroke="${fill}" stroke-dasharray="4 2" stroke-width="2"${stroke}/>`;
   }
   function svgStrip(f, diff = false) {
     const ordered = f.elements.filter((el) => el.order !== null && el.order !== undefined)
@@ -306,14 +336,14 @@ const CodeGuide = (function () {
     const width = left + step * Math.max(...rows.map((r) => r[1].length)) + 20;
     const height = rowH * rows.length;
     const out = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img">`,
-      `<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5b6470"/></marker></defs>`];
+      `<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${COLORS.edge}"/></marker></defs>`];
     rows.forEach(([name, els], r) => {
       const cy = r * rowH + 40;
       out.push(`<text class="space" x="4" y="${cy + 4}">${esc(name)}</text>`);
       els.forEach((el, i) => {
         const cx = left + i * step;
-        if (i) out.push(`<line x1="${cx - step + 22}" y1="${cy}" x2="${cx - 24}" y2="${cy}" stroke="#5b6470" marker-end="url(#arr)"/>`);
-        const fill = el.type === "syntax_sugar" ? "#1a1a1a" : "#fff";
+        if (i) out.push(`<line x1="${cx - step + 22}" y1="${cy}" x2="${cx - 24}" y2="${cy}" stroke="${COLORS.edge}" marker-end="url(#arr)"/>`);
+        const fill = el.type === "structure" ? COLORS.ink : COLORS.onType;
         const dim = diff && !el.change ? ' opacity=".45"' : "";
         const name = (diff ? glyph(el.change) : "") + String(el.name).slice(0, 14);
         out.push(`<g${dim}><title>${esc(el.name + " — " + el.explanation)}</title>${svgShape(el, cx, cy)}` +
@@ -361,10 +391,10 @@ const CodeGuide = (function () {
   <span><i class="swatch-warn"></i> ⚠️ side effect / цикл імпортів</span>${diff ? "\n  <span>+ додано · − видалено · ~ змінено · бліде — без змін</span>" : ""}
 </div>`;
   }
-  function header(data) {
+  function header(data, theme) {
     const langs = data.languages.map((l) => `<span class="badge">${esc(l)}</span>`).join(" ");
-    return `<header><h1>Code guide — ${esc(data.project)}</h1>` +
-      `<p class="sub">${esc(data.generated)} · commit ${esc(data.git_commit || "—")} · depth ${esc(data.depth)} · ${langs}</p></header>`;
+    return `<header><div><h1>Code guide — ${esc(data.project)}</h1>` +
+      `<p class="sub">${esc(data.generated)} · commit ${esc(data.git_commit || "—")} · depth ${esc(data.depth)} · ${langs}</p></div>${themeButton(theme)}</header>`;
   }
   function l1Html(data) {
     const l1 = data.l1;
@@ -427,12 +457,12 @@ const CodeGuide = (function () {
     const renamed = p.after && p.after.renamed_from ? ` ← <code>${esc(p.after.renamed_from)}</code>` : "";
     return `<code>${esc(glyph(f.change) + f.path)}</code>${renamed} · ${esc(f.language)}`;
   }
-  function diffHeader(data) {
+  function diffHeader(data, theme) {
     const r = data.range;
     const langs = data.languages.map((l) => `<span class="badge">${esc(l)}</span>`).join(" ");
-    return `<header><h1>Code diff — ${esc(data.project)}</h1>` +
+    return `<header><div><h1>Code diff — ${esc(data.project)}</h1>` +
       `<p class="sub">${esc(data.generated)} · ${esc(`${r.from || "∅"}..${r.to}`)}${r.subject ? " · " + esc(r.subject) : ""} · depth ${esc(data.depth)} · ${langs}</p>` +
-      `<p>${esc(data.summary)}</p></header>`;
+      `<p>${esc(data.summary)}</p></div>${themeButton(theme)}</header>`;
   }
   function l1Col(l1, isRoot) {
     if (!l1.nodes.length) return absent(isRoot ? "порожньо — кореневий коміт" : "вузлів немає");
@@ -481,40 +511,55 @@ const CodeGuide = (function () {
     return `Поясни, чому після коміту фрагмент №${n + 1} (${pairs[n].after.path}) виконується в іншому порядку, ніж до нього.`;
   }
 
-  // Повний HTML тіла для #app. Кидає GuideError, якщо дані невалідні.
-  function render(data) {
+  // Повний HTML тіла для #app. Кидає GuideError, якщо дані чи тема невалідні.
+  function render(data, theme = "dark") {
+    if (!PALETTES[theme]) throw new GuideError(`тема має бути dark | light, а не ${JSON.stringify(theme)}`);
+    COLORS = PALETTES[theme];
     if (data && data.mode === "diff") {
       validateDiff(data);
-      return diffHeader(data) + legend(true) + diffL1(data) + diffL2(data) + diffL3(data) + footer(data);
+      return themeCss(theme) + diffHeader(data, theme) + legend(true) + diffL1(data) + diffL2(data) + diffL3(data) + footer(data);
     }
     validate(data);
-    return header(data) + legend() + l1Html(data) + l2Html(data) + l3Html(data) + footer(data);
+    return themeCss(theme) + header(data, theme) + legend() + l1Html(data) + l2Html(data) + l3Html(data) + footer(data);
   }
 
   // ------------------------------------------------------------------- boot
-  function boot() {
-    const app = document.getElementById("app");
-    let data;
-    try {
-      data = JSON.parse(document.getElementById("guide-data").textContent);
-      app.innerHTML = render(data);
-      document.title = `${data.mode === "diff" ? "Code diff" : "Code guide"} — ${data.project}`;
-    } catch (e) {
-      app.innerHTML = `<div class="error">Помилка гайда: ${esc(e.message)}</div>`;
-      return;
-    }
-    // Mermaid: в Artifact pre.mermaid може відрендерити хост; чекаємо, і лише якщо SVG так і не з'явився — рендеримо самі.
+  const THEME_KEY = "code-anatomy-theme";
+  function savedTheme() {
+    try { return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark"; } catch (e) { return "dark"; }
+  }
+  // Mermaid: в Artifact pre.mermaid може відрендерити хост; при першому показі чекаємо, і лише якщо SVG так і не з'явився — рендеримо самі.
+  function runMermaid(theme, wait) {
     setTimeout(() => {
       if (!window.mermaid || document.querySelector("pre.mermaid svg")) return;
-      window.mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+      window.mermaid.initialize({ startOnLoad: false, theme: PALETTES[theme].mermaid });
       window.mermaid.run({ querySelector: "pre.mermaid" });
-    }, 1500);
+    }, wait);
+  }
+  function paint(data, theme, first) {
+    const app = document.getElementById("app");
+    app.innerHTML = render(data, theme);
+    document.documentElement.dataset.theme = theme;
+    document.title = `${data.mode === "diff" ? "Code diff" : "Code guide"} — ${data.project}`;
+    runMermaid(theme, first ? 1500 : 0);
+    app.querySelector("[data-theme-toggle]").onclick = () => {
+      const next = theme === "dark" ? "light" : "dark";
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* приватне вікно — тема просто не запам'ятається */ }
+      paint(data, next, false);
+    };
+  }
+  function boot() {
+    try {
+      paint(JSON.parse(document.getElementById("guide-data").textContent), savedTheme(), true);
+    } catch (e) {
+      document.getElementById("app").innerHTML = `${themeCss("dark")}<div class="error">Помилка гайда: ${esc(e.message)}</div>`;
+    }
   }
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
   }
 
-  return { TYPES, COLORS, GuideError, validate, validateDiff, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback };
+  return { TYPES, PALETTES, GuideError, validate, validateDiff, themeCss, mermaidL1, mermaidL2, svgStrip, codeBlock, elementsTable, legend, render, teachback };
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>

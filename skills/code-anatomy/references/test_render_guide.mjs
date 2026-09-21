@@ -66,8 +66,11 @@ test("callout з чужим kind відхиляється", () => {
 
 // --- рендер -----------------------------------------------------------------------
 const html = CG.render(exampleData());
-test("усі п'ять кольорів палітри присутні", () => {
-  for (const c of ["#3B82F6", "#10B981", "#F59E0B", "#6B7280", "#DC2626"]) assert.ok(html.includes(c), c);
+test("render за замовчуванням темний: палітра dark у <style id=\"palette\"> і в Mermaid", () => {
+  const out = CG.render(exampleData());
+  assert.match(out, /<style id="palette">:root \{ color-scheme: dark;/);
+  assert.ok(out.includes("--data: #93C2DA;"));
+  assert.ok(out.includes("classDef data fill:#93C2DA"));
 });
 test("один Mermaid-блок на L1 і по одному на файл", () => {
   assert.equal(html.split('<pre class="mermaid">').length - 1, 1 + exampleData().files.length);
@@ -98,7 +101,7 @@ test("side effect дає червону рамку і callout", () => {
   const d = exampleData(); d.files[0].elements[1].side_effect = "пише в консоль";
   const out = CG.render(d);
   assert.ok(out.includes("callout-side-effect"));
-  assert.ok(out.includes("stroke:#DC2626"));
+  assert.ok(out.includes(`stroke:${CG.PALETTES.dark.warn}`));
 });
 test("цикл імпортів дає callout і червоне ребро", () => {
   const d = exampleData();
@@ -175,4 +178,36 @@ test("кожен f-order лежить у тілі функції фікстур�
       assert.ok(el.line >= 3 && el.line <= 6, `${el.name}: line ${el.line} поза тілом функції (3-6)`);
     }
   }
+});
+
+// --- теми -------------------------------------------------------------------------
+test("render у світлій темі бере світлу палітру і в Mermaid теж", () => {
+  const out = CG.render(exampleData(), "light");
+  assert.ok(out.includes("--data: #4C6FD6;"));
+  assert.ok(out.includes("classDef data fill:#4C6FD6"));
+  assert.ok(!out.includes("#93C2DA"));
+});
+test("після світлого рендера наступний дефолтний знову темний", () => {
+  CG.render(exampleData(), "light");
+  assert.ok(CG.render(exampleData()).includes("classDef data fill:#93C2DA"));
+});
+test("невідома тема відхиляється", () => {
+  assert.throws(() => CG.render(exampleData(), "sepia"), (e) => e instanceof CG.GuideError && /dark \| light/.test(e.message));
+});
+test("кожен колір, який читає CSS шаблону, є в обох палітрах", () => {
+  const css = TEMPLATE.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const used = new Set([...css.matchAll(/var\(--([\w-]+)/g)].map((m) => m[1]).filter((v) => !v.startsWith("font-") && v !== "c"));
+  assert.ok(used.size > 10, "CSS має читати кольори через var(--…)");
+  for (const theme of ["dark", "light"]) {
+    const pal = CG.themeCss(theme);
+    for (const v of used) assert.ok(pal.includes(`--${v}:`), `${theme}: бракує --${v}`);
+  }
+});
+test("у CSS шаблону немає жодного hex-кольору — лише var(--…)", () => {
+  const css = TEMPLATE.match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.deepEqual(css.match(/#[0-9a-fA-F]{3,8}\b/g), null);
+});
+test("шапка має перемикач теми з підписом протилежної", () => {
+  assert.ok(CG.render(exampleData()).includes("☀ Світла тема"));
+  assert.ok(CG.render(exampleData(), "light").includes("☾ Темна тема"));
 });
