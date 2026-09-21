@@ -79,6 +79,22 @@ test("entry не bool відхиляється", () => {
   const d = exampleData(); d.l1.nodes[0].entry = "так";
   assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /entry/.test(e.message));
 });
+test("files: null і entry: null — як відсутні, валідні", () => {
+  const d = exampleData(); d.l1.nodes[0].files = null; d.l1.nodes[0].entry = null;
+  CG.validate(d);
+});
+test("порожній id вузла L1 відхиляється", () => {
+  const d = exampleData(); d.l1.nodes[0].id = "";
+  assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /l1\.nodes\[0\]/.test(e.message));
+});
+test("id вузла не рядок відхиляється", () => {
+  const d = exampleData(); d.l1.nodes[0].id = 42;
+  assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /l1\.nodes\[0\]/.test(e.message));
+});
+test("id вузла L1, що повторюється, відхиляється з назвою id", () => {
+  const d = exampleData(); d.l1.nodes[1].id = d.l1.nodes[0].id;
+  assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && e.message.includes(d.l1.nodes[0].id));
+});
 
 // --- рендер -----------------------------------------------------------------------
 const html = CG.render(exampleData());
@@ -201,6 +217,11 @@ test("кожен колір, який читає CSS шаблону, є в об�
     for (const v of used) assert.ok(pal.includes(`--${v}:`), `${theme}: бракує --${v}`);
   }
 });
+test("невживаний клас .frag прибраний із CSS", () => {
+  const css = TEMPLATE.match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.ok(!css.includes(".frag"));
+  assert.ok(!TEMPLATE.includes('class="frag"'));
+});
 test("у CSS шаблону немає жодного hex-кольору — лише var(--…)", () => {
   const css = TEMPLATE.match(/<style>([\s\S]*?)<\/style>/)[1];
   assert.deepEqual(css.match(/#[0-9a-fA-F]{3,8}\b/g), null);
@@ -224,6 +245,18 @@ test("cyElements: без files усі вузли однакові й підпи�
   assert.equal(elOf(els, "src/checkout.ts").data.h, 130);
   assert.equal(elOf(els, "src/types.ts").data.h, 130);
   assert.equal(elOf(els, "src/checkout.ts").data.label, "src/checkout.ts");
+});
+test("cyElements: ширина вузла — max(округлене h*1.6, довжина підпису*10+28)", () => {
+  const short = CG.cyElements(l1Of([{ id: "a", kind: "file" }], []));
+  assert.equal(elOf(short, "a").data.w, 208);
+  const long = CG.cyElements(l1Of([{ id: "abcdefghijklmnopqrstuv", kind: "file" }], []));
+  assert.equal(elOf(long, "abcdefghijklmnopqrstuv").data.w, 248);
+});
+test("cyElements: id ребра не може збігтись з id вузла", () => {
+  const els = CG.cyElements(l1Of([{ id: "x", kind: "file" }, { id: "y", kind: "file" }], [{ from: "x", to: "y" }]));
+  const edge = els.find((e) => e.group === "edges");
+  assert.equal(edge.data.id, "__edge__0");
+  assert.ok(!els.some((e) => e.group === "nodes" && e.data.id === edge.data.id));
 });
 test("cyElements: entry, orphan і hub стають класами; ребра в хаб — tohub", () => {
   const five = ["a", "b", "c", "d", "e"];
@@ -290,6 +323,26 @@ test("CDN: mermaid, elk → cytoscape → cytoscape-elk саме в такому
 test("diff-режим L1 лишається на Mermaid, без Cytoscape-контейнера", () => {
   const d = JSON.parse(readFileSync(join(HERE, "..", "..", "code-anatomy-diff", "references", "worked_example_diff.md"), "utf8").match(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/)[1]);
   assert.ok(!CG.render(d).includes('id="cy-l1"'));
+});
+test("mountL1 не витікає: попередній екземпляр Cytoscape знищується перед новим", () => {
+  const src = TEMPLATE.match(/function mountL1\([\s\S]*?\n  \}/)[0];
+  assert.match(src, /lastCy(\.destroy\(\)| = null)/);
+  assert.match(src, /lastCy\s*=\s*cy/);
+});
+test("mountL1 не кидає назовні: створення й підключення Cytoscape у try/catch", () => {
+  const src = TEMPLATE.match(/function mountL1\([\s\S]*?\n  \}/)[0];
+  assert.match(src, /try\s*\{[\s\S]*window\.cytoscape\(\{[\s\S]*\}\s*catch/);
+});
+test("paint монтує програвачі до mountL1 — L3 працює, навіть якщо граф впав", () => {
+  const src = TEMPLATE.match(/function paint\([\s\S]*?\n  \}/)[0];
+  assert.ok(src.indexOf("mountPlayers(") < src.indexOf("mountL1("));
+});
+test("мінімальний читабельний зум L1 винесений у названу константу 0.6", () => {
+  assert.match(TEMPLATE, /const\s+\w+\s*=\s*0\.6;.*читаб/i);
+});
+test("boot: помилка гайда малюється темою savedTheme(), не хардкодним dark", () => {
+  const src = TEMPLATE.match(/function boot\(\)[\s\S]*?\n  \}/)[0];
+  assert.match(src, /themeCss\(savedTheme\(\)\)/);
 });
 
 // --- програвач L3: кроки ------------------------------------------------------------

@@ -51,8 +51,6 @@
   table.elements td.t-operation { border-left: 4px solid var(--operation); }
   table.elements td.t-syntax_sugar { border-left: 4px solid var(--syntax_sugar); }
   table.elements td.t-structure { border-left: 4px solid var(--structure); }
-  .frag { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-  @media (max-width: 760px) { .frag { grid-template-columns: 1fr; } }
   .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
   .col { min-width: 0; }
@@ -199,11 +197,17 @@ const CodeGuide = (function () {
     require(side.l1, ["nodes", "edges"], `${p}l1`);
     if (!Array.isArray(side.l1.nodes)) throw new GuideError(`${p}l1: nodes має бути масивом`);
     if (!Array.isArray(side.l1.edges)) throw new GuideError(`${p}l1: edges має бути масивом`);
+    const seenIds = new Set();
     side.l1.nodes.forEach((n, i) => {
-      if (n.files !== undefined && !(Number.isInteger(n.files) && n.files > 0)) {
+      if (typeof n.id !== "string" || n.id.length === 0) {
+        throw new GuideError(`${p}l1.nodes[${i}]: id має бути непорожнім рядком, а не ${JSON.stringify(n.id)}`);
+      }
+      if (seenIds.has(n.id)) throw new GuideError(`${p}l1.nodes[${i}] ${n.id}: id повторюється — id вузлів L1 мають бути унікальними`);
+      seenIds.add(n.id);
+      if (n.files !== undefined && n.files !== null && !(Number.isInteger(n.files) && n.files > 0)) {
         throw new GuideError(`${p}l1.nodes[${i}] ${n.id}: files має бути цілим > 0, а не ${JSON.stringify(n.files)}`);
       }
-      if (n.entry !== undefined && typeof n.entry !== "boolean") {
+      if (n.entry !== undefined && n.entry !== null && typeof n.entry !== "boolean") {
         throw new GuideError(`${p}l1.nodes[${i}] ${n.id}: entry має бути true або false, а не ${JSON.stringify(n.entry)}`);
       }
     });
@@ -396,8 +400,10 @@ const CodeGuide = (function () {
       const classes = [n.entry ? "entry" : "", orphans.has(n.id) ? "orphan" : "", inDeg.get(n.id) >= HUB_MIN_IN ? "hub" : ""].filter(Boolean).join(" ");
       return { group: "nodes", data: { id: n.id, label: files > 1 ? `${label}\n${files}` : label, h, w: Math.max(Math.round(h * 1.6), label.length * 10 + 28) }, classes };
     });
+    // Префікс "__edge__" не може збігтись з id вузла: node id завжди береться з реального шляху/імені файлу,
+    // а "__" на початку в такому контексті не зустрічається.
     const edgeEls = edges.map((e, i) => ({
-      group: "edges", data: { id: `e${i}`, source: e.from, target: e.to },
+      group: "edges", data: { id: `__edge__${i}`, source: e.from, target: e.to },
       classes: [inDeg.get(e.to) >= HUB_MIN_IN ? "tohub" : "", cycles.some((w) => w.includes(e.from) && w.includes(e.to)) ? "cycle" : ""].filter(Boolean).join(" "),
     }));
     return nodes.concat(edgeEls);
@@ -443,40 +449,64 @@ const CodeGuide = (function () {
   const ELK_LAYOUT = { name: "elk", fit: true, padding: 24, elk: { algorithm: "layered", "elk.direction": "RIGHT",
     "elk.layered.spacing.nodeNodeBetweenLayers": 90, "elk.spacing.nodeNode": 22,
     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", "elk.edgeRouting": "SPLINES" } };
-  // Браузер: оживляє #cy-l1. Без Cytoscape (офлайн) лишає пояснення — панель-огляд і список модулів уже в розмітці.
+  const MIN_READABLE_ZOOM = 0.6;                                       // нижче цього підписи вузлів нечитабельні
+  const CY_OFFLINE_HTML = `<p class="sub" style="padding:12px">Граф не завантажився: потрібен інтернет (Cytoscape з CDN). Модулі — у списку нижче.</p>`;
+  let lastCy = null;                                                   // останній екземпляр Cytoscape L1 — знищуємо перед тим, як створити новий
+  // Чи зареєстрований layout "elk" — cytoscape-elk міг не довантажитись окремо від cytoscape і elkjs, навіть якщо
+  // сам window.cytoscape є. cytoscape("layout", name) — вбудований спосіб дістати розширення за назвою: undefined,
+  // якщо воно не зареєструвалось. Це надійніше за перевірку window.ELK, яка каже лише що завантажився elkjs,
+  // а не що плагін-міст cytoscape-elk його підключив.
+  function cyLayoutName() {
+    try { return typeof window.cytoscape("layout", "elk") === "function" ? "elk" : "breadthfirst"; }
+    catch (e) { return "breadthfirst"; }
+  }
+  // Браузер: оживляє #cy-l1. Без Cytoscape (офлайн) або якщо щось усередині впало — показує те саме пояснення;
+  // панель-огляд і список модулів уже є в розмітці, тому L1 деградує м'яко і ніколи не кидає назовні.
   function mountL1(data, theme) {
     const box = document.getElementById("cy-l1");
     if (!box) return;
-    if (!window.cytoscape) {
-      box.innerHTML = `<p class="sub" style="padding:12px">Граф не завантажився: потрібен інтернет (Cytoscape з CDN). Модулі — у списку нижче.</p>`;
-      return;
+    if (lastCy) { try { lastCy.destroy(); } catch (e) { /* вже знищений */ } lastCy = null; }
+    if (!window.cytoscape) { box.innerHTML = CY_OFFLINE_HTML; return; }
+    try {
+      const l1 = data.l1, panel = document.getElementById("l1-panel");
+      const layout = Object.assign({}, ELK_LAYOUT, { name: cyLayoutName() });
+      const cy = window.cytoscape({ container: box, elements: cyElements(l1), style: cyStyle(PALETTES[theme]), layout, minZoom: 0.2, maxZoom: 3 });
+      lastCy = cy;
+      cy.one("layoutstop", () => {
+        if (cy.zoom() < MIN_READABLE_ZOOM) {
+          const target = cy.nodes(".entry")[0] || cy.nodes()[0];
+          cy.zoom(MIN_READABLE_ZOOM);
+          if (target) cy.center(target);
+        }
+      });
+      const select = (id) => {
+        cy.elements().removeClass("faded out in sel");
+        panel.innerHTML = l1PanelHtml(l1, id);
+        panel.querySelectorAll("a[data-node]").forEach((a) => { a.onclick = () => select(a.dataset.node); });
+        if (id === null) return;
+        const node = cy.getElementById(id), outs = node.outgoers("edge"), ins = node.incomers("edge");
+        cy.elements().addClass("faded");
+        node.removeClass("faded").addClass("sel");
+        outs.removeClass("faded").addClass("out"); outs.targets().removeClass("faded");
+        ins.removeClass("faded").addClass("in"); ins.sources().removeClass("faded");
+      };
+      const fade = document.getElementById("l1-fadehub");
+      const applyFade = () => cy.edges(".tohub").toggleClass("fadehub", fade.checked);
+      fade.onchange = applyFade;
+      applyFade();
+      document.getElementById("l1-fit").onclick = () => cy.animate({ fit: { padding: 24 }, duration: 300 });
+      document.getElementById("l1-q").oninput = (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        cy.nodes().removeClass("hit");
+        if (q) cy.nodes().filter((n) => n.id().toLowerCase().includes(q)).addClass("hit");
+      };
+      cy.on("tap", "node", (ev) => select(ev.target.id()));
+      cy.on("tap", (ev) => { if (ev.target === cy) select(null); });
+      select(null);
+    } catch (e) {
+      if (lastCy) { try { lastCy.destroy(); } catch (e2) { /* вже знищений */ } lastCy = null; }
+      box.innerHTML = CY_OFFLINE_HTML;
     }
-    const l1 = data.l1, panel = document.getElementById("l1-panel");
-    const cy = window.cytoscape({ container: box, elements: cyElements(l1), style: cyStyle(PALETTES[theme]), layout: ELK_LAYOUT, minZoom: 0.2, maxZoom: 3 });
-    const select = (id) => {
-      cy.elements().removeClass("faded out in sel");
-      panel.innerHTML = l1PanelHtml(l1, id);
-      panel.querySelectorAll("a[data-node]").forEach((a) => { a.onclick = () => select(a.dataset.node); });
-      if (id === null) return;
-      const node = cy.getElementById(id), outs = node.outgoers("edge"), ins = node.incomers("edge");
-      cy.elements().addClass("faded");
-      node.removeClass("faded").addClass("sel");
-      outs.removeClass("faded").addClass("out"); outs.targets().removeClass("faded");
-      ins.removeClass("faded").addClass("in"); ins.sources().removeClass("faded");
-    };
-    const fade = document.getElementById("l1-fadehub");
-    const applyFade = () => cy.edges(".tohub").toggleClass("fadehub", fade.checked);
-    fade.onchange = applyFade;
-    applyFade();
-    document.getElementById("l1-fit").onclick = () => cy.animate({ fit: { padding: 24 }, duration: 300 });
-    document.getElementById("l1-q").oninput = (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      cy.nodes().removeClass("hit");
-      if (q) cy.nodes().filter((n) => n.id().toLowerCase().includes(q)).addClass("hit");
-    };
-    cy.on("tap", "node", (ev) => select(ev.target.id()));
-    cy.on("tap", (ev) => { if (ev.target === cy) select(null); });
-    select(null);
   }
 
   // ---------------------------------------------------------------- SVG L3
@@ -836,8 +866,8 @@ const CodeGuide = (function () {
     document.documentElement.dataset.theme = theme;
     document.title = `${data.mode === "diff" ? "Code diff" : "Code guide"} — ${data.project}`;
     runMermaid(theme, first ? 1500 : 0);
-    mountL1(data, theme);
     mountPlayers(data);
+    mountL1(data, theme);
     app.querySelector("[data-theme-toggle]").onclick = () => {
       const next = theme === "dark" ? "light" : "dark";
       try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* приватне вікно — тема просто не запам'ятається */ }
@@ -848,7 +878,7 @@ const CodeGuide = (function () {
     try {
       paint(JSON.parse(document.getElementById("guide-data").textContent), savedTheme(), true);
     } catch (e) {
-      document.getElementById("app").innerHTML = `${themeCss("dark")}<div class="error">Помилка гайда: ${esc(e.message)}</div>`;
+      document.getElementById("app").innerHTML = `${themeCss(savedTheme())}<div class="error">Помилка гайда: ${esc(e.message)}</div>`;
     }
   }
   if (typeof document !== "undefined") {
