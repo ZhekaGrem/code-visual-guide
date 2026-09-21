@@ -64,6 +64,22 @@ test("callout з чужим kind відхиляється", () => {
   assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /callouts/.test(e.message) && /cycle \| orphan/.test(e.message));
 });
 
+// --- схема L1: files / entry ----------------------------------------------------
+test("вузол L1 з files і entry валідний", () => {
+  const d = exampleData(); d.l1.nodes[0].files = 3; d.l1.nodes[0].entry = true;
+  CG.validate(d);
+});
+test("files не ціле > 0 відхиляється з назвою вузла", () => {
+  const d = exampleData(); d.l1.nodes[0].files = "182";
+  assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /src\/checkout\.ts/.test(e.message) && /files/.test(e.message));
+  d.l1.nodes[0].files = 0;
+  assert.throws(() => CG.validate(d), /files/);
+});
+test("entry не bool відхиляється", () => {
+  const d = exampleData(); d.l1.nodes[0].entry = "так";
+  assert.throws(() => CG.validate(d), (e) => e instanceof CG.GuideError && /entry/.test(e.message));
+});
+
 // --- рендер -----------------------------------------------------------------------
 const html = CG.render(exampleData());
 test("render за замовчуванням темний: палітра dark у <style id=\"palette\"> і в Mermaid", () => {

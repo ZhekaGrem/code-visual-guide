@@ -141,6 +141,14 @@ const CodeGuide = (function () {
     require(side.l1, ["nodes", "edges"], `${p}l1`);
     if (!Array.isArray(side.l1.nodes)) throw new GuideError(`${p}l1: nodes має бути масивом`);
     if (!Array.isArray(side.l1.edges)) throw new GuideError(`${p}l1: edges має бути масивом`);
+    side.l1.nodes.forEach((n, i) => {
+      if (n.files !== undefined && !(Number.isInteger(n.files) && n.files > 0)) {
+        throw new GuideError(`${p}l1.nodes[${i}] ${n.id}: files має бути цілим > 0, а не ${JSON.stringify(n.files)}`);
+      }
+      if (n.entry !== undefined && typeof n.entry !== "boolean") {
+        throw new GuideError(`${p}l1.nodes[${i}] ${n.id}: entry має бути true або false, а не ${JSON.stringify(n.entry)}`);
+      }
+    });
     side.files.forEach((f, i) => {
       require(f, ["path", "language", "elements"], `${p}files[${i}]`);
       f.elements.forEach((el, j) => {

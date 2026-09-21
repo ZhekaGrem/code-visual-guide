@@ -94,6 +94,8 @@ D (не кажи «зберіг», якщо не зберіг), E (multiplier, �
 <constraint> Пропустити: node_modules, vendor, target, build, dist, .venv, __pycache__, .git </constraint>
 <constraint> > 40 файлів → вузол L1 = тека, не файл </constraint>
 <constraint> тека з > 10 файлами → у її вузлі показати тільки експорти, не всі файли </constraint>
+<constraint> files — скільки файлів коду у вузлі (вузол-файл → 1); рендерер робить вузол більшим пропорційно √files. Не знаєш точно — не пиши поле, не вигадуй </constraint>
+<constraint> entry: true — лише на вузлі з точкою входу (lang_<x>.md §5); інших entry не позначай </constraint>
 <constraint> кілька мов → окремий L1-блок на кожну; спільний граф не малювати </constraint>
 <constraint> depth = 3 і > 100 файлів → попередити: «L3 тільки для 3–5 фрагментів, не для всього репо» </constraint>
 
@@ -229,7 +231,7 @@ Go `init()` → до `main`; Python-декоратор → при `def`; SQL →
   "depth": 2,
   "l2_note": "string — L2 показано для N з M файлів: …",
   "l1": {
-    "nodes": [{"id": "src/api", "kind": "dir | file", "summary": "≤ 1 речення"}],
+    "nodes": [{"id": "src/api", "kind": "dir | file", "summary": "≤ 1 речення", "files": 12, "entry": false}],
     "edges": [{"from": "src/api", "to": "src/db"}],
     "callouts": [{"kind": "cycle | orphan", "where": "string", "note": "≤ 15 слів"}]
   },
