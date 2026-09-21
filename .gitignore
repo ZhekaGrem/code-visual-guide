@@ -13,3 +13,6 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# --- Plans, specs, prototypes: local working notes, not part of the plugin ---
+/docs/
